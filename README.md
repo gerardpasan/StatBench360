@@ -1,4 +1,4 @@
-# 🛡️ SalleApp360 V71126v8
+# 🛡️ SalleApp360 V71126v10
 
 > **Sistema Avanzado de Gestión de Banquillo, Estadísticas y Actas Oficiales para Fútbol Base (SD La Salle)**
 
