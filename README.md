@@ -2,10 +2,6 @@
 
 > **Sistema Avanzado de Gestión de Banquillo, Estadísticas y Actas Oficiales para Fútbol Base (SD La Salle)**
 
-![Versión](https://img.shields.io/badge/versión-V71126v8-lasalle?style=flat-square&color=002B66)
-![Estado](https://img.shields.io/badge/estado-producción-success?style=flat-square)
-![Licencia](https://img.shields.io/badge/licencia-MIT-blue?style=flat-square)
-
 ---
 
 ## 📋 Descripción del Proyecto
