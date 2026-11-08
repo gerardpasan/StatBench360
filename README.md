@@ -1,12 +1,12 @@
-# 🛡️ SalleApp360 V71126v10
+# 🛡️ StatBench360 V71126v10
 
-> **Sistema Avanzado de Gestión de Banquillo, Estadísticas y Actas Oficiales para Fútbol Base (SD La Salle)**
+> **Sistema Avanzado de Gestión de Banquillo, Estadísticas y Actas Oficiales para Fútbol Base 11**
 
 ---
 
 ## 📋 Descripción del Proyecto
 
-**SalleApp360** es una aplicación web progresiva y ligera (diseñada con arquitectura de archivo único en HTML5, Tailwind CSS y JavaScript vainilla) optimizada para entrenadores, cuerpos técnicos y delegados. Permite llevar el control absoluto en directo de un partido de fútbol base (minutaje, sustituciones, goles, asistencias y tarjetas), con persistencia de datos local y la capacidad de generar y compartir actas oficiales en PDF adaptadas a la normativa federativa.
+**StatBench360** es una aplicación web progresiva y ligera (diseñada con arquitectura de archivo único en HTML5, Tailwind CSS y JavaScript vainilla) optimizada para entrenadores, cuerpos técnicos y delegados. Permite llevar el control absoluto en directo de un partido de fútbol base (minutaje, sustituciones, goles, asistencias y tarjetas), con persistencia de datos local y la capacidad de generar y compartir actas oficiales en PDF adaptadas a la normativa federativa.
 
 ---
 
@@ -49,8 +49,7 @@
 
 ## 👤 Autor & Créditos
 
-* **Desarrollado por:** GpM1978  
-* **Club:** SD La Salle  
+* **Desarrollado por:** GpM1978 & #5
 
 ---
 
