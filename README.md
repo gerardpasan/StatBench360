@@ -1,3 +1,5 @@
+<p align="center"><img src="logo_sb360.png" alt="StatBench360 by GpM1978" width="140"></p>
+
 # StatBench360
 
 Aplicación web para que el entrenador lleve las **estadísticas y el seguimiento de partidos de Fútbol 11 en tiempo real**: marcador, goles, asistencias, tarjetas, cambios, minutos jugados y cronología. Funciona en el móvil, se puede instalar como app y se usa también **sin cobertura**.
@@ -14,7 +16,7 @@ Aplicación web para que el entrenador lleve las **estadísticas y el seguimient
 - **Vista de campo** (opcional) por formación.
 - **Acta:** estadísticas completas, PDF, CSV y **resumen para compartir** por WhatsApp (texto o imagen).
 - **Histórico y temporada:** partidos guardados y acumulados por jugador (por ID, no por dorsal), con filtros.
-- **Datos:** copias de seguridad completas, copias automáticas, PIN opcional y borrado de datos con aviso previo.
+- **Datos:** copias de seguridad completas, copias automáticas, PIN opcional y borrado de datos con aviso previo. Al guardar una copia o la plantilla puedes **elegir dónde guardarla**.
 - **Recorrido guiado** para usuarios nuevos, con opción "No mostrar más", y manual integrado (botón **?** de la cabecera).
 - **Pantalla encendida y vibración** durante el partido (si el navegador lo permite).
 
@@ -26,8 +28,10 @@ Aplicación web para que el entrenador lleve las **estadísticas y el seguimient
 | `sw.js` | Service worker: guarda la app en el dispositivo para el uso sin conexión. |
 | `manifest.webmanifest` | Permite instalarla como app en el móvil. |
 | `icons/` | Iconos de la app. |
+| `logo_sb360.png` | Logo de la app (solo se usa en este README). |
+| `LICENSE` | Licencia MIT. |
 
-Todos deben estar juntos, con `index.html` y `sw.js` en la raíz del repositorio.
+Para que la app funcione, `index.html`, `sw.js`, `manifest.webmanifest` y la carpeta `icons/` deben estar juntos, con `index.html` y `sw.js` en la raíz del repositorio.
 
 ## Publicar en GitHub Pages
 
@@ -61,7 +65,7 @@ Comparte **solo la dirección web**. Cada persona la instala en su móvil y empi
 ## Actualizar la app
 
 1. Sustituye `index.html` (y `sw.js`) en el repositorio.
-2. **Sube el número `VERSION`** en `sw.js` (por ejemplo, de `'v5'` a `'v6'`) para que todos los móviles renueven su copia.
+2. **Sube el número `VERSION`** en `sw.js` (por ejemplo, de `'v8'` a `'v9'`) para que todos los móviles renueven su copia.
 3. Los móviles se actualizan solos al abrir la app con internet. La versión nueva se ve la segunda vez que se abre: basta con cerrarla del todo y volver a abrirla.
 
 Una actualización normal no borra los datos de los usuarios.
@@ -85,7 +89,7 @@ Una actualización normal no borra los datos de los usuarios.
 
 ## Tecnología
 
-Archivo único en HTML y JavaScript, sin servidor. Usa Tailwind CSS, Font Awesome, y jsPDF desde CDN (el modo sin conexión los guarda en el dispositivo).
+Archivo único en HTML y JavaScript, sin servidor. Usa Tailwind CSS, Font Awesome y jsPDF desde CDN (el modo sin conexión los guarda en el dispositivo).
 
 ## Licencia
 
