@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- StatBench360 | Versión generada: 2026-11-14 20:20 (Europe/Madrid) -->
+<!-- StatBench360 | Versión generada: 2026-11-14 20:42 (Europe/Madrid) -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="generator-version" content="2026-11-14 20:20 (Europe/Madrid)">
+    <meta name="generator-version" content="2026-11-14 20:42 (Europe/Madrid)">
     <title>StatBench360</title>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#002B66">
@@ -297,6 +297,7 @@
                 teamId: isSafeId(raw.teamId) ? raw.teamId : newId('tm'),
                 events: (Array.isArray(raw.events) ? raw.events.slice(0, 500) : []).map(sanitizeEvent).filter(Boolean),
                 plannedSubs,
+                injTimers: (Array.isArray(raw.injTimers) ? raw.injTimers.slice(0, 10) : []).filter(x => x && typeof x === 'object' && isSafeId(x.id)).map(x => ({ id: x.id, label: cleanText(x.label, 40) || 'Jugador', endAt: toInt(x.endAt, 0, 0, 8.64e15), done: !!x.done, last: toInt(x.last, 0, 0, 8.64e15), n: toInt(x.n, 0, 0, 10) })),
                 formation: ((m.format === 'f8') ? F8_FORMATIONS[raw.formation] : FORMATIONS[raw.formation]) ? raw.formation : (m.format === 'f8' ? '3-3-1' : '4-4-2'),
                 fieldPos: sanitizeFieldPos(raw.fieldPos),
                 prefs: { wake: pr.wake !== false, vibrate: pr.vibrate !== false, autoDl: !!pr.autoDl }
@@ -536,6 +537,7 @@
                     teamId: newId('tm'),
                     events: [],
                     plannedSubs: [],
+                    injTimers: [],
                     formation: '4-4-2',
                     fieldPos: {},
                     prefs: { wake: true, vibrate: true, autoDl: false }
@@ -562,6 +564,7 @@
                 } else {
                     this.switchTab('setup');
                 }
+                if ((this.state.injTimers || []).length) this.startInjInterval();
                 setTimeout(() => this.maybeStartTour(), 700);
             }
 
@@ -615,6 +618,127 @@
                 this.state.match.matchday = '1';
                 this.state.match.competition = 'Liga Oficial';
                 this.state.matchResetted = true;
+            }
+
+            // ===== Lesionados: 1 minuto fuera del campo (norma 2026-27) =====
+            fmtSec(sec) { sec = Math.max(0, sec); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`; }
+
+            // Sonido de alarma (varios pitidos alternos). El audio se desbloquea al pulsar "iniciar".
+            unlockAudio() {
+                try {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (!AC) return;
+                    if (!this._actx) this._actx = new AC();
+                    if (this._actx.state === 'suspended') this._actx.resume();
+                } catch (e) { /* se ignora */ }
+            }
+
+            alarmSound() {
+                try {
+                    this.unlockAudio();
+                    const ctx = this._actx;
+                    if (!ctx) return;
+                    const t0 = ctx.currentTime + 0.05;
+                    for (let i = 0; i < 8; i++) {
+                        const o = ctx.createOscillator(), g = ctx.createGain();
+                        o.type = 'square';
+                        o.frequency.value = i % 2 ? 660 : 990;
+                        const a = t0 + i * 0.3;
+                        g.gain.setValueAtTime(0.0001, a);
+                        g.gain.exponentialRampToValueAtTime(0.35, a + 0.02);
+                        g.gain.exponentialRampToValueAtTime(0.0001, a + 0.26);
+                        o.connect(g); g.connect(ctx.destination);
+                        o.start(a); o.stop(a + 0.28);
+                    }
+                } catch (e) { /* se ignora */ }
+            }
+
+            openInjuryPicker() {
+                if (this.state.match.status === 'setup' || this.state.match.status === 'finished') { this.showToast('El partido no está en juego'); return; }
+                const list = this.state.squad.filter(p => p.status !== 'unconvoked')
+                    .sort((a, b) => (a.status === 'starter' ? 0 : 1) - (b.status === 'starter' ? 0 : 1) || a.number - b.number);
+                document.getElementById('modal-container').innerHTML = `
+                    <div class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm max-h-[92vh] overflow-y-auto rounded-3xl p-5 shadow-2xl relative space-y-3">
+                            <button onclick="app.closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                            <h3 class="font-bold text-base text-white pr-6">🩹 Jugador atendido por lesión</h3>
+                            <p class="text-xs text-slate-400">Debe estar 1 minuto fuera del campo. Elige quién y empieza la cuenta atrás cuando se reanude el juego.</p>
+                            <div class="grid grid-cols-4 gap-1.5">
+                                ${list.map(p => `<button onclick="app.startInjury('${p.id}')" class="rounded-xl border px-1 py-2 text-center active:scale-95 ${p.status === 'starter' ? 'bg-slate-950 border-slate-600' : 'bg-slate-950/50 border-slate-800 opacity-70'}">
+                                    <div class="text-lg font-black text-lasalle-yellow leading-none">${esc(p.number)}</div>
+                                    <div class="text-[10px] text-slate-200 truncate mt-1">${esc(p.name)}</div></button>`).join('')}
+                            </div>
+                            <div class="flex gap-2 items-center pt-1 border-t border-slate-800">
+                                <input id="inj-rival-num" type="text" maxlength="3" placeholder="Dorsal rival" class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white">
+                                <button onclick="app.startInjury('', document.getElementById('inj-rival-num').value)" class="bg-slate-700 text-white font-bold px-3 py-2.5 rounded-xl text-xs">Jugador rival</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+
+            startInjury(pid, rivalNum) {
+                const p = pid ? this.state.squad.find(x => x.id === pid) : null;
+                const num = cleanText(rivalNum, 3);
+                const label = p ? `#${p.number} ${p.name}` : (num ? `Rival #${num}` : 'Jugador rival');
+                this.unlockAudio();
+                this.state.injTimers = (this.state.injTimers || []).filter(x => x.label !== label);
+                this.state.injTimers.push({ id: newId('inj'), label, endAt: Date.now() + 60000, done: false, last: 0, n: 0 });
+                this.addEvent('note', 'home', this.curMin(), { text: `Lesión: ${label} atendido, 1 minuto fuera del campo` });
+                this.startInjInterval();
+                this.closeModal();
+                this.saveToStorage();
+                this.render();
+            }
+
+            cancelInjury(id) {
+                this.state.injTimers = (this.state.injTimers || []).filter(x => x.id !== id);
+                this.saveToStorage();
+                this.render();
+            }
+
+            startInjInterval() {
+                if (this.injHandle) return;
+                this.injHandle = setInterval(() => this.injTick(), 500);
+                this.injTick();
+            }
+
+            injTick() {
+                const list = this.state.injTimers || [];
+                if (!list.length) { clearInterval(this.injHandle); this.injHandle = null; return; }
+                const now = Date.now();
+                let changed = false;
+                list.forEach(t => {
+                    if (now >= t.endAt) {
+                        // alarma al cumplirse y se repite cada 8 s (3 veces más) hasta que se pulse OK
+                        if (!t.done || (t.n < 4 && now - t.last >= 8000)) {
+                            if (!t.done) { t.done = true; changed = true; }
+                            t.last = now; t.n++;
+                            this.alarmSound();
+                            this.vibrate([400, 150, 400, 150, 400]);
+                            if (t.n === 1) this.speak(`Atención. ${t.label.replace('#', 'dorsal ')} ya ha cumplido un minuto fuera y puede volver al campo.`);
+                            this.saveToStorage();
+                        }
+                    } else {
+                        const el = document.querySelector(`[data-inj="${t.id}"]`);
+                        if (el) el.textContent = this.fmtSec(Math.ceil((t.endAt - now) / 1000));
+                    }
+                });
+                if (changed) {
+                    const mc = document.getElementById('modal-container');
+                    if (mc && !mc.innerHTML.trim()) this.render(); else this._needRender = true;
+                }
+            }
+
+            renderInjuryBar() {
+                const list = this.state.injTimers || [];
+                if (!list.length) return '';
+                const now = Date.now();
+                return `<div class="flex flex-wrap gap-1.5">${list.map(t => {
+                    const done = t.done || now >= t.endAt;
+                    return done
+                        ? `<button onclick="app.cancelInjury('${t.id}')" class="flex items-center gap-1.5 bg-emerald-500 text-slate-950 font-black text-[11px] px-2.5 py-1.5 rounded-full animate-pulse">🩹 ${esc(t.label)} · YA PUEDE VOLVER <span class="bg-slate-950/20 rounded px-1">OK</span></button>`
+                        : `<div class="flex items-center gap-1.5 bg-amber-500/20 border border-amber-500/50 text-amber-200 font-bold text-[11px] pl-2.5 pr-1 py-1 rounded-full">🩹 ${esc(t.label)} <span data-inj="${t.id}" class="font-mono font-black text-amber-300">${this.fmtSec(Math.ceil((t.endAt - now) / 1000))}</span><button onclick="app.cancelInjury('${t.id}')" class="w-5 h-5 rounded-full bg-slate-900/60 text-slate-300 text-[10px]" aria-label="Cancelar">✕</button></div>`;
+                }).join('')}</div>`;
             }
 
             speak(text) {
@@ -679,6 +803,7 @@
                 this.state.windows = { home: { used: 0, max: 3 }, away: { used: 0, max: 3 } };
                 this.state.events = [];
                 this.state.plannedSubs = [];
+                this.state.injTimers = [];
                 this.state.fieldPos = {};
                 this.state.audioAlerts.customAlarms = [];
                 m.homeTeam = 'Equipo Local';
@@ -1247,6 +1372,7 @@
                                 ${btn('bg-slate-800 text-white', '⚽+', 'Gol con detalle', `app.openModal('goal_home', { scorer: '${p.id}' })`)}
                                 ${btn('bg-slate-800 text-white', '🅰', 'Dio asistencia', `app.openModal('goal_home', { assist: '${p.id}' })`)}
                             </div>
+                            <button onclick="app.startInjury('${p.id}')" class="w-full bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-2xl py-2 font-black text-xs">🩹 Lesionado: 1 minuto fuera</button>
                         </div>
                     </div>`;
             }
@@ -1757,6 +1883,7 @@
                         <h2 class="text-base font-extrabold text-lasalle-yellow">Vista de campo</h2>
                         <button onclick="app.switchTab('dashboard')" class="bg-slate-800 text-lasalle-yellow px-2.5 py-1 rounded-lg text-xs font-bold border border-lasalle-yellow/30"><i class="fa-solid fa-arrow-left"></i> Directo</button>
                     </div>
+                    ${this.renderInjuryBar()}
                     ${this.fieldControls()}
                     <button onclick="app.toggleFieldEdit()" class="w-full ${edit ? 'bg-lasalle-yellow text-lasalle-darkblue' : 'bg-slate-800 text-lasalle-yellow border border-lasalle-yellow/30'} font-black py-2 rounded-xl text-xs flex items-center justify-center gap-2">
                         <i class="fa-solid ${edit ? 'fa-lock-open' : 'fa-up-down-left-right'}"></i> ${edit ? 'Mover jugadores: ACTIVADO (pulsa para terminar)' : 'Mover jugadores'}
@@ -2610,9 +2737,14 @@
                         `}
                     </div>
 
-                    <div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-3 rounded-2xl">
-                        <div class="text-xs font-bold text-slate-300">
-                            <i class="fa-solid fa-bell text-lasalle-yellow mr-1"></i> Alarma de Voz Puntual
+                    ${this.renderInjuryBar()}
+
+                    <div class="flex justify-between items-center gap-2 bg-slate-900 border border-slate-800 p-3 rounded-2xl">
+                        <button onclick="app.openInjuryPicker()" class="bg-amber-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow active:scale-95" aria-label="Jugador lesionado: cuenta atrás de 1 minuto">
+                            🩹 Lesión 1:00
+                        </button>
+                        <div class="text-xs font-bold text-slate-300 hidden min-[380px]:block">
+                            <i class="fa-solid fa-bell text-lasalle-yellow mr-1"></i> Alarma
                         </div>
                         <button onclick="app.openCustomAlarmModal()" class="bg-lasalle-yellow hover:bg-lasalle-yellowhover text-lasalle-darkblue font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow">
                             <i class="fa-solid fa-clock"></i> Fijar Alarma
@@ -5316,7 +5448,7 @@
             }
         }
 
-        console.info('StatBench360 - versión generada: 2026-11-14 20:20 (Europe/Madrid)');
+        console.info('StatBench360 - versión generada: 2026-11-14 20:42 (Europe/Madrid)');
         const app = new FutStatApp();
         app.initOffline();
     </script>
