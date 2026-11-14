@@ -2,7 +2,7 @@
 
 # StatBench360
 
-Aplicación web para que el entrenador lleve las **estadísticas y el seguimiento de partidos de Fútbol 11 en tiempo real**: marcador, goles, asistencias, tarjetas, cambios, minutos jugados y cronología. Funciona en el móvil, se puede instalar como app y se usa también **sin cobertura**.
+Aplicación web para que el entrenador lleve las **estadísticas y el seguimiento de partidos de Fútbol 11 y Fútbol 8 en tiempo real**: marcador, goles, asistencias, tarjetas, cambios, minutos jugados y cronología. Funciona en el móvil, se puede instalar como app y se usa también **sin cobertura**.
 
 > Los datos (partidos, plantilla e histórico) se guardan **solo en el navegador de cada dispositivo**. Este repositorio contiene únicamente la aplicación: no incluye datos de nadie.
 
@@ -14,7 +14,10 @@ Aplicación web para que el entrenador lleve las **estadísticas y el seguimient
 - **Cronología editable:** editar o borrar cualquier suceso; el marcador y las estadísticas se recalculan solos.
 - **Plantilla:** pegar una lista de nombres, subir un archivo .txt/.csv, o crear jugadores a mano. Cada jugador tiene un **ID permanente**.
 - **Vista de campo** (opcional) por formación.
-- **Acta:** estadísticas completas, PDF, CSV y **resumen para compartir** por WhatsApp (texto o imagen).
+- **Acta:** estadísticas completas, PDF, CSV y **resumen para compartir** por WhatsApp (texto o PDF visual de una página para la dirección).
+- **Fútbol 8:** elige la modalidad en Inicio. 4 cuartos de duración configurable, 8 titulares, cambios solo en las pausas (varios a la vez) y por lesión durante el cuarto, minutos por cuartos completos, control compacto de faltas por cuarto (doble penalti a partir de la 6.ª), expulsiones de 2 minutos o definitivas, doble amarilla y aviso de mínimo 2 cuartos por jugador.
+- **Lesionados (norma 2026-27):** botón 🩹 *Lesión 1:00* en Directo (o desde el menú del jugador): cuenta atrás de 1 minuto con alarma de sonido, voz y vibración al cumplirse. Vale para jugadores propios y rivales.
+- **Enviar partidos por WhatsApp:** en el Histórico marca uno o varios partidos y envía un archivo que otra persona importa en su app. Los jugadores se unen por nombre a sus fichas.
 - **Histórico y temporada:** partidos guardados y acumulados por jugador (por ID, no por dorsal), con filtros.
 - **Datos:** copias de seguridad completas, copias automáticas, PIN opcional y borrado de datos con aviso previo. Al guardar una copia o la plantilla puedes **elegir dónde guardarla**.
 - **Recorrido guiado** para usuarios nuevos, con opción "No mostrar más", y manual integrado (botón **?** de la cabecera).
@@ -65,7 +68,7 @@ Comparte **solo la dirección web**. Cada persona la instala en su móvil y empi
 ## Actualizar la app
 
 1. Sustituye `index.html` (y `sw.js`) en el repositorio.
-2. **Sube el número `VERSION`** en `sw.js` (por ejemplo, de `'v8'` a `'v9'`) para que todos los móviles renueven su copia.
+2. **Sube el número `VERSION`** en `sw.js` (por ejemplo, de `'v14'` a `'v15'`) para que todos los móviles renueven su copia.
 3. Los móviles se actualizan solos al abrir la app con internet. La versión nueva se ve la segunda vez que se abre: basta con cerrarla del todo y volver a abrirla.
 
 Una actualización normal no borra los datos de los usuarios.

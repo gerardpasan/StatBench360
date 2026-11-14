@@ -6,7 +6,7 @@
  * - Solo se guardan los dominios de la lista CDN_HOSTS. Cualquier otra petición NO se intercepta ni se guarda.
  * - Si cambias algo y quieres forzar que todos los dispositivos renueven sus copias, sube VERSION.
  */
-const VERSION = 'v12';
+const VERSION = 'v14';
 const CACHE_PREFIX = 'statbench360-';
 const CACHE = CACHE_PREFIX + VERSION;
 const SCOPE = self.registration.scope;

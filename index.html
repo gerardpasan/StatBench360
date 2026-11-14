@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- StatBench360 | Versión generada: 2026-11-14 20:42 (Europe/Madrid) -->
+<!-- StatBench360 | Versión generada: 2026-11-14 20:53 (Europe/Madrid) -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="generator-version" content="2026-11-14 20:42 (Europe/Madrid)">
+    <meta name="generator-version" content="2026-11-14 20:53 (Europe/Madrid)">
     <title>StatBench360</title>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#002B66">
@@ -2311,7 +2311,7 @@
                             <div class="grid grid-cols-2 gap-2">
                                 <button onclick="app.shareText()" class="bg-emerald-600 text-white font-black py-2.5 rounded-xl text-xs"><i class="fa-brands fa-whatsapp mr-1"></i> Enviar texto</button>
                                 <button onclick="app.copyShare()" class="bg-slate-800 text-lasalle-yellow font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-copy mr-1"></i> Copiar</button>
-                                <button onclick="app.shareImage()" class="bg-lasalle-yellow text-lasalle-darkblue font-black py-2.5 rounded-xl text-xs col-span-2"><i class="fa-solid fa-image mr-1"></i> Crear imagen</button>
+                                <button onclick="app.sharePDF()" class="bg-lasalle-yellow text-lasalle-darkblue font-black py-2.5 rounded-xl text-xs col-span-2"><i class="fa-solid fa-file-pdf mr-1"></i> Enviar PDF visual (para la dirección)</button>
                             </div>
                         </div>
                     </div>`;
@@ -2334,6 +2334,167 @@
                 };
                 if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => this.showToast('Resumen copiado'), fallback);
                 else fallback();
+            }
+
+            // Resumen visual en PDF (una página A4 pensada para enseñar a la dirección del equipo)
+            buildSummaryPDF(e) {
+                const jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+                const W = 210, M = 12;
+                const NAVY = [0, 43, 102], YEL = [255, 204, 0], INK = [30, 41, 59], MUTE = [100, 116, 139], CARD = [241, 245, 249], LINE = [203, 213, 225];
+                const t = v => String(v == null ? '' : v).replace(/[^\u0020-\u00FF]/g, '?');
+                const m = e.match;
+                const [own, opp] = this.ownGoals(e);
+                const res = own > opp ? ['VICTORIA', [22, 163, 74]] : (own < opp ? ['DERROTA', [220, 38, 38]] : ['EMPATE', [217, 119, 6]]);
+                const f8 = m.format === 'f8';
+                const evs = (e.events || []).slice();
+                if (!f8) evs.sort((a, b) => a.minute - b.minute);
+                let y = 0;
+                const newPage = () => { doc.addPage(); y = M; };
+                const need = h => { if (y + h > 284) newPage(); };
+                const sectionTitle = (txt, x, w) => {
+                    doc.setFillColor(...NAVY); doc.roundedRect(x, y, w, 7, 1.5, 1.5, 'F');
+                    doc.setTextColor(...YEL); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(t(txt), x + 3, y + 4.9);
+                };
+
+                // Cabecera
+                doc.setFillColor(...NAVY); doc.rect(0, 0, W, 34, 'F');
+                doc.setFillColor(...YEL); doc.rect(0, 34, W, 2.2, 'F');
+                try { doc.addImage(LOGO_DATA, 'PNG', M, 3, 23, 27); } catch (err) { /* sin logo */ }
+                doc.setTextColor(...YEL); doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.text('StatBench360', 40, 16);
+                doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+                doc.text(t(`RESUMEN DEL PARTIDO  |  ${m.competition}  |  Jornada ${m.matchday}`), 40, 24);
+                doc.setFontSize(8.5); doc.setTextColor(203, 213, 225);
+                doc.text(t(`${m.date}  |  ${m.format === 'f8' ? `Futbol 8 - 4 x ${m.quarterDuration}'` : 'Futbol 11'}`), 40, 29.5);
+
+                // Marcador
+                y = 42;
+                doc.setFillColor(...CARD); doc.roundedRect(M, y, W - 2 * M, 44, 3, 3, 'F');
+                doc.setDrawColor(...LINE); doc.roundedRect(M, y, W - 2 * M, 44, 3, 3, 'S');
+                const cx = W / 2;
+                doc.setTextColor(...INK); doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+                const hn = doc.splitTextToSize(t(m.homeTeam), 64), an = doc.splitTextToSize(t(m.awayTeam), 64);
+                doc.text(hn.slice(0, 2), M + 36, y + 17, { align: 'center' });
+                doc.text(an.slice(0, 2), W - M - 36, y + 17, { align: 'center' });
+                doc.setFontSize(40); doc.setTextColor(...NAVY);
+                doc.text(`${e.homeGoals} - ${e.awayGoals}`, cx, y + 24, { align: 'center' });
+                doc.setFontSize(8); doc.setTextColor(...MUTE); doc.setFont('helvetica', 'normal');
+                doc.text(m.isHome ? 'LOCAL (nuestro equipo)' : 'LOCAL', M + 36, y + 33, { align: 'center' });
+                doc.text(m.isHome ? 'VISITANTE' : 'VISITANTE (nuestro equipo)', W - M - 36, y + 33, { align: 'center' });
+                doc.setFillColor(...res[1]); doc.roundedRect(cx - 17, y + 30, 34, 8, 4, 4, 'F');
+                doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(res[0], cx, y + 35.4, { align: 'center' });
+                if (f8 && e.fouls && e.fouls.length) {
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTE);
+                    doc.text(t(`Faltas por cuarto (nuestro - rival): ${e.fouls.map((f, i) => `${i + 1}o ${f[0]}-${f[1]}`).join('   ')}`), cx, y + 42, { align: 'center' });
+                }
+                y += 50;
+
+                // Goles | Tarjetas
+                const colW = (W - 2 * M - 6) / 2;
+                const goals = evs.filter(x => ['goal', 'own_goal', 'goal_away', 'own_goal_away'].includes(x.type));
+                const cards = evs.filter(x => x.type === 'card' || x.type === 'card_away');
+                const rowsG = goals.length ? goals : [null], rowsC = cards.length ? cards : [null];
+                const nRows = Math.min(10, Math.max(rowsG.length, rowsC.length));
+                need(9 + nRows * 9);
+                sectionTitle('GOLES', M, colW); sectionTitle('TARJETAS', M + colW + 6, colW);
+                const drawList = (list, x, kind) => {
+                    let yy = y + 11;
+                    list.slice(0, 10).forEach(ev => {
+                        doc.setFontSize(8.5);
+                        if (!ev) { doc.setTextColor(...MUTE); doc.setFont('helvetica', 'italic'); doc.text('Sin registros', x + 2, yy); return; }
+                        if (kind === 'card') {
+                            const red = /Roja|Doble/.test(ev.title);
+                            doc.setFillColor(...(red ? [220, 38, 38] : [250, 204, 21])); doc.roundedRect(x + 2, yy - 3.2, 3, 4.2, 0.5, 0.5, 'F');
+                        } else {
+                            doc.setFillColor(...NAVY); doc.circle(x + 3.4, yy - 1.2, 1.4, 'F');
+                        }
+                        doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY); doc.text(`${ev.minute}'`, x + 8, yy);
+                        doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+                        const lines = doc.splitTextToSize(t(ev.title), colW - 22);
+                        doc.text(lines[0], x + 16, yy);
+                        if (kind === 'goal' && ev.detail && /Asistencia/.test(ev.detail)) { doc.setFontSize(7); doc.setTextColor(...MUTE); doc.text(t(ev.detail), x + 16, yy + 3.4); }
+                        yy += 9;
+                    });
+                };
+                drawList(rowsG, M, 'goal'); drawList(rowsC, M + colW + 6, 'card');
+                y += 11 + nRows * 9;
+
+                // Cambios
+                const subs = evs.filter(x => x.type === 'sub').slice(0, 8);
+                if (subs.length) {
+                    need(9 + subs.length * 5.5);
+                    sectionTitle('CAMBIOS', M, W - 2 * M);
+                    let yy = y + 12;
+                    doc.setFontSize(8); doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+                    subs.forEach(ev => {
+                        const line = doc.splitTextToSize(t(`${ev.minute}'  ${ev.title}`), W - 2 * M - 4)[0];
+                        doc.text(line, M + 2, yy); yy += 5.5;
+                    });
+                    y += 10 + subs.length * 5.5 + 2;
+                }
+
+                // Jugadores
+                const players = (e.players || []).filter(p => p.mins > 0 || p.goals || p.assists || p.yellow || p.red).sort((a, b) => a.number - b.number);
+                y += 2;
+                need(16);
+                sectionTitle('JUGADORES', M, W - 2 * M);
+                y += 9;
+                const maxM = Math.max(1, ...players.map(p => p.mins));
+                const xs = { n: M + 2, name: M + 12, bar: M + 78, min: M + 112, g: M + 130, a: M + 146, am: M + 162, rj: M + 176 };
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...MUTE);
+                doc.text('#', xs.n, y + 3); doc.text('JUGADOR', xs.name, y + 3); doc.text('MINUTOS', xs.bar, y + 3);
+                doc.text('G', xs.g, y + 3); doc.text('ASIST', xs.a, y + 3); doc.text('AM', xs.am, y + 3); doc.text('RJ', xs.rj, y + 3);
+                y += 5;
+                players.forEach((p, i) => {
+                    if (y + 6 > 284) { newPage(); }
+                    if (i % 2 === 0) { doc.setFillColor(...CARD); doc.rect(M, y, W - 2 * M, 6, 'F'); }
+                    const cy = y + 4.2;
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...NAVY); doc.text(String(p.number), xs.n, cy);
+                    doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+                    doc.text(t(p.name + (p.captain ? ' (C)' : '')).slice(0, 30), xs.name, cy);
+                    doc.setFillColor(...LINE); doc.roundedRect(xs.bar, y + 1.8, 26, 2.4, 1, 1, 'F');
+                    if (p.mins > 0) { doc.setFillColor(14, 165, 233); doc.roundedRect(xs.bar, y + 1.8, Math.max(1.5, 26 * p.mins / maxM), 2.4, 1, 1, 'F'); }
+                    doc.setTextColor(...INK); doc.text(`${p.mins}'`, xs.min, cy);
+                    doc.setFont('helvetica', p.goals ? 'bold' : 'normal'); doc.setTextColor(...(p.goals ? [22, 163, 74] : INK)); doc.text(String(p.goals), xs.g, cy);
+                    doc.setFont('helvetica', p.assists ? 'bold' : 'normal'); doc.setTextColor(...(p.assists ? NAVY : INK)); doc.text(String(p.assists), xs.a + 2, cy);
+                    doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+                    if (p.yellow) { doc.setFillColor(250, 204, 21); doc.roundedRect(xs.am, y + 1.2, 2.8, 3.8, 0.4, 0.4, 'F'); if (p.yellow > 1) doc.text(`x${p.yellow}`, xs.am + 3.6, cy); }
+                    if (p.red) { doc.setFillColor(220, 38, 38); doc.roundedRect(xs.rj, y + 1.2, 2.8, 3.8, 0.4, 0.4, 'F'); }
+                    y += 6;
+                });
+
+                // Pie en todas las páginas
+                const pages = doc.getNumberOfPages();
+                for (let k = 1; k <= pages; k++) {
+                    doc.setPage(k);
+                    doc.setDrawColor(...LINE); doc.line(M, 288, W - M, 288);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTE);
+                    doc.text(t(`Generado con StatBench360  |  ${m.homeTeam} - ${m.awayTeam}  |  ${m.date}`), M, 293);
+                    doc.text(`${k}/${pages}`, W - M, 293, { align: 'right' });
+                }
+                return doc;
+            }
+
+            async sharePDF() {
+                const e = this.shareEntry(this._shareId);
+                if (!e) return;
+                if (!(window.jspdf && window.jspdf.jsPDF)) { alert('No se pudo cargar el generador de PDF (necesita conexión la primera vez).'); return; }
+                let doc;
+                try { doc = this.buildSummaryPDF(e); } catch (err) { console.error(err); alert('No se pudo crear el PDF.'); return; }
+                const safe = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 20);
+                const name = `Resumen_${safe(e.match.homeTeam)}_vs_${safe(e.match.awayTeam)}_${e.match.date}.pdf`;
+                const blob = doc.output('blob');
+                try {
+                    const file = new File([blob], name, { type: 'application/pdf' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: 'Resumen del partido' });
+                        this.showToast('PDF enviado');
+                        return;
+                    }
+                } catch (err) {
+                    if (err && err.name === 'AbortError') return;
+                }
+                await this.saveFile(name, doc.output('arraybuffer'), 'application/pdf');
             }
 
             shareImage() {
@@ -3067,7 +3228,7 @@
                     section('fa-list-check', '1. Antes del partido (pantalla Inicio)', steps([
                         '<b>Datos del partido:</b> pulsa <b>LOCAL</b> o <b>VISITANTE</b> según jueguen <i>tu equipo</i>. Escribe el nombre del equipo local y del visitante, la competición, la jornada, la fecha y los minutos de cada parte.',
                         '<b>Plantilla:</b> añade jugadores a mano en "Gestión Ampliada de Plantilla", sube un archivo .txt/.csv con el formato <code class="text-lasalle-yellow">9 Juan Pérez</code> (dorsal y nombre en cada línea), o <b>pega una lista</b> copiada de cualquier sitio (botón "Pegar lista de jugadores").',
-                        '<b>Convocatoria:</b> pasa a cada jugador a <b>Titular</b>, <b>Banquillo</b> o <b>Fuera</b>. Lo normal son 11 titulares. Marca la <b>C</b> en el capitán.',
+                        '<b>Convocatoria:</b> pasa a cada jugador a <b>Titular</b>, <b>Banquillo</b> o <b>Fuera</b>. Lo normal son 11 titulares (8 en Fútbol 8). Marca la <b>C</b> en el capitán.',
                         '<b>Voz:</b> elige si quieres avisos por voz del minuto y cada cuánto.',
                         'Pulsa <b>Iniciar Partido</b>. El cronómetro empieza en ese momento.'
                     ]) + `<p class="text-slate-400">Si el partido anterior ya terminó, pulsa antes <b>Resetear / Nuevo</b>: te preguntará si quieres conservar la plantilla (recomendado) o volver a la de ejemplo.</p>`),
@@ -3108,7 +3269,8 @@
                     section('fa-clock-rotate-left', '6. Histórico de partidos', bullets([
                         'Cada partido que finalizas se guarda solo. También puedes pulsar <b>Guardar en el histórico</b> en la pestaña Acta / PDF.',
                         'Entra desde el botón <b>Histórico de partidos</b> de la pantalla Inicio: verás el balance (victorias, empates, derrotas, goles) y la lista por fecha.',
-                        'Pulsa un partido para ver su marcador, las estadísticas de cada jugador y la cronología. Desde ahí puedes exportarlo a CSV o eliminarlo.',
+                        'Pulsa un partido para ver su marcador, las estadísticas de cada jugador y la cronología. Desde ahí puedes compartirlo (texto o PDF visual), enviarlo a otro móvil como archivo o eliminarlo.',
+                        '<b>Enviar partidos a otro móvil:</b> marca uno o varios partidos en el Histórico y pulsa <b>Enviar</b>. Se genera un archivo que la otra persona importa en su app (Histórico → Importar copia). También acepta una copia completa: solo coge los partidos. Los jugadores se unen por nombre a sus fichas.',
                         '<b>Copia de seguridad:</b> "Exportar copia" descarga todo el histórico en un archivo; "Importar copia" lo recupera (por ejemplo en otro móvil) sin duplicar partidos.'
                     ])),
 
@@ -3140,9 +3302,21 @@
                         '<b>Inicio plegable:</b> cada tarjeta de Inicio (Datos del partido, Aviso por voz, Uso en el banquillo, Cargar plantilla, Alineación) se pliega y se despliega tocando su título. La app recuerda lo que dejaste abierto. "Plegar todo" y "Desplegar todo" están arriba.',
                         '<b>Recorrido guiado:</b> Inicio → "Recorrido guiado de la app" lo repite cuando quieras. Se abre solo al entrar hasta que marques "No mostrar más".',
                         '<b>Borrar datos:</b> en Histórico puedes borrar todo el histórico, y en Temporada las estadísticas de todos los jugadores o de uno solo (papelera). Antes de borrar la app te pregunta si quieres descargar una copia de seguridad. <b>Dónde se guardan los datos:</b> en este navegador y dispositivo (pulsa "¿Dónde se guardan?"); las copias descargadas van a la carpeta de descargas.',
-                        '<b>Compartir resumen:</b> en el Acta o en el detalle de un partido del histórico. Puedes enviar texto por WhatsApp, copiarlo o generar una imagen.',
+                        '<b>Compartir resumen:</b> en el Acta o en el detalle de un partido del histórico. Puedes enviar texto por WhatsApp, copiarlo o enviar un <b>PDF visual de una página</b> (marcador, goles, tarjetas, cambios y tabla de jugadores) pensado para la dirección del equipo.',
                         '<b>PIN y copias:</b> en Inicio puedes poner un PIN para abrir la app y hacer una copia completa (partido + histórico). La app también guarda copias automáticas al empezar, finalizar y resetear.'
                     ])),
+                    section('fa-people-group', '9. Fútbol 8 y lesiones', bullets([
+                        '<b>Modalidad:</b> en Inicio → Datos del partido elige <b>Fútbol 11</b> o <b>Fútbol 8</b>. En F8 son 4 cuartos (2 por parte) con la duración que elijas (10, 12, 15, 18 o los minutos que escribas) y 8 titulares.',
+                        '<b>Cuartos:</b> "Finalizar cuarto" abre la pausa con cronómetro; "Iniciar n.º cuarto" la cierra. Tras el 2.º cuarto es el descanso. El reloj sigue acumulando minutos (0-4 cuartos). No hay ventanas de cambio.',
+                        '<b>Cambios en F8:</b> solo en las pausas, con "Hacer cambios": marca los que salen y los que entran (varios a la vez). Quien sale puede volver a entrar en otro cuarto. Durante el cuarto solo se permite el <b>cambio por lesión</b> (el que entra cuenta el cuarto completo) o completar el equipo tras una expulsión.',
+                        '<b>Minutos:</b> cada cuarto en el que un jugador está presente cuenta completo.',
+                        '<b>Mínimo 2 cuartos:</b> al iniciar cada cuarto y al finalizar el partido, un aviso te dice qué jugadores no llegan o tienen que jugar todos los cuartos restantes. Debes confirmarlo para continuar.',
+                        '<b>Tarjetas en F8:</b> doble amarilla o roja preguntan si la expulsión es <b>de 2 minutos</b> (el equipo juega con uno menos 2 minutos de juego; luego se completa con un suplente o vuelve el expulsado) o <b>definitiva</b> del partido.',
+                        '<b>Faltas por cuarto:</b> control compacto en Directo con − y + para Nuestro y Rival. Avisa a la 5.ª falta y desde la 6.ª es <b>doble penalti</b> a favor del otro equipo. Se reinicia cada cuarto y queda en la cronología y el acta.',
+                        '<b>Goles:</b> eliges goleador (dorsal), asistencia y tipo, incluido <b>Doble penalti</b>.',
+                        '<b>Lesionado, 1 minuto fuera (norma 2026-27):</b> pulsa <b>🩹 Lesión 1:00</b> en Directo (o "Lesionado" en el menú del jugador), elige al jugador propio o el dorsal de un rival y empieza la cuenta atrás cuando se reanude el juego. Al cumplirse suena una alarma, vibra y avisa por voz; el aviso verde queda hasta que pulses OK. Con la ✕ la cancelas.'
+                    ])),
+
                     section('fa-circle-question', 'Problemas frecuentes', bullets([
                         '<b>No se oye la voz:</b> sube el volumen, quita el modo silencio y comprueba que "Voz Activada" está en Sí. En iPhone la voz solo suena después de tocar la pantalla.',
                         '<b>El botón Iniciar no responde:</b> pulsa antes Resetear / Nuevo.',
@@ -3647,8 +3821,7 @@
                     <button onclick="app.openShare('${e.id}')" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-share-nodes"></i> Compartir resumen (WhatsApp)</button>
                     <button onclick="app.openSendMatches(['${e.id}'])" class="w-full bg-slate-800 text-emerald-300 border border-emerald-600/50 font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-paper-plane"></i> Enviar este partido (archivo para importar)</button>
 
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="app.exportHistoryCSV('${e.id}')" class="bg-lasalle-yellow text-lasalle-darkblue font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-excel"></i> Exportar CSV</button>
+                    <div class="grid grid-cols-1 gap-2">
                         <button onclick="app.deleteHistory('${e.id}')" class="bg-rose-600/30 text-rose-300 border border-rose-500/40 font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-trash"></i> Eliminar</button>
                     </div>
                 </div>`;
@@ -5448,7 +5621,7 @@
             }
         }
 
-        console.info('StatBench360 - versión generada: 2026-11-14 20:42 (Europe/Madrid)');
+        console.info('StatBench360 - versión generada: 2026-11-14 20:53 (Europe/Madrid)');
         const app = new FutStatApp();
         app.initOffline();
     </script>
