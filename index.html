@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- StatBench360 | Versión generada: 2026-11-14 20:06 (Europe/Madrid) -->
+<!-- StatBench360 | Versión generada: 2026-11-14 20:20 (Europe/Madrid) -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="generator-version" content="2026-11-14 20:06 (Europe/Madrid)">
+    <meta name="generator-version" content="2026-11-14 20:20 (Europe/Madrid)">
     <title>StatBench360</title>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#002B66">
@@ -3538,11 +3538,11 @@
                 const e = this.loadHistory().find(x => x.id === id);
                 if (!e) return;
                 const m = e.match;
-                const header = ['Competicion', 'EquipoLocal', 'EquipoVisitante', 'Jornada', 'Fecha', 'Jugador', 'Dorsal', 'Posicion',
+                const header = ['Competicion', 'EquipoLocal', 'EquipoVisitante', 'Jornada', 'Fecha', 'Jugador', 'Dorsal',
                     'Capitan', 'MinutosJugados', 'Goles', 'Asistencias', 'TarjetasAmarillas', 'TarjetaRoja', 'IDJugador', 'IDEquipo'].join(',');
                 const rows = e.players.map(p => [
                     csvCell(m.competition), csvCell(m.homeTeam), csvCell(m.awayTeam), csvCell(m.matchday), csvCell(m.date),
-                    csvCell(p.name), p.number, p.position, p.captain ? 'Sí' : 'No', p.mins, p.goals, p.assists, p.yellow, p.red ? 'Sí' : 'No', csvCell(p.pid), csvCell(m.teamId)
+                    csvCell(p.name), p.number, p.captain ? 'Sí' : 'No', p.mins, p.goals, p.assists, p.yellow, p.red ? 'Sí' : 'No', csvCell(p.pid), csvCell(m.teamId)
                 ].join(','));
                 const fileName = 'Historico_' + safeFile(m.date) + '_' + safeFile(m.homeTeam) + '_vs_' + safeFile(m.awayTeam) + '.csv';
                 this.downloadCSV(fileName, [header, ...rows].join('\r\n') + '\r\n');
@@ -5302,11 +5302,11 @@
 
             exportGoogleDriveSheet() {
                 const m = this.state.match;
-                const header = ['Competicion', 'EquipoLocal', 'EquipoRival', 'Jornada', 'Fecha', 'Jugador', 'Dorsal', 'Posicion',
+                const header = ['Competicion', 'EquipoLocal', 'EquipoRival', 'Jornada', 'Fecha', 'Jugador', 'Dorsal',
                     'Capitan', 'MinutosJugados', 'Goles', 'MinutosGoles', 'Asistencias', 'TarjetasAmarillas', 'TarjetaRoja', 'IDJugador', 'IDEquipo'].join(',');
                 const rows = this.state.squad.filter(p => p.status !== 'unconvoked').map(p => [
                     csvCell(m.competition), csvCell(m.homeTeam), csvCell(m.awayTeam), csvCell(m.matchday), csvCell(m.date),
-                    csvCell(p.name), p.number, p.position, p.captain ? 'Sí' : 'No', this.calculatePlayerMinutes(p),
+                    csvCell(p.name), p.number, p.captain ? 'Sí' : 'No', this.calculatePlayerMinutes(p),
                     p.goals, csvCell(p.goalMinutes.join('-')), p.assists, p.yellowCards, p.redCard ? 'Sí' : 'No', csvCell(p.pid), csvCell(this.state.teamId)
                 ].join(','));
 
@@ -5316,7 +5316,7 @@
             }
         }
 
-        console.info('StatBench360 - versión generada: 2026-11-14 20:06 (Europe/Madrid)');
+        console.info('StatBench360 - versión generada: 2026-11-14 20:20 (Europe/Madrid)');
         const app = new FutStatApp();
         app.initOffline();
     </script>
