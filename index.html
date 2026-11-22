@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- StatBench360 | Versión generada: 2026-11-19 20:59 (Europe/Madrid) -->
+<!-- StatBench360 | Versión generada: 2026-11-22 08:40 (Europe/Madrid) -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="generator-version" content="2026-11-19 20:59 (Europe/Madrid)">
+    <meta name="generator-version" content="2026-11-22 08:40 (Europe/Madrid)">
     <title>StatBench360</title>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#002B66">
@@ -257,11 +257,17 @@
             const ids = new Set(squad.map(p => p.id));
             const pr = (raw.prefs && typeof raw.prefs === 'object') ? raw.prefs : {};
             const plannedSubs = (Array.isArray(raw.plannedSubs) ? raw.plannedSubs.slice(0, 20) : [])
-                .map(x => (x && typeof x === 'object') ? {
-                    id: isSafeId(x.id) ? x.id : newId('ps'), min: toInt(x.min, 0, 0, 200),
-                    out: isSafeId(x.out) ? x.out : '', in: isSafeId(x.in) ? x.in : '',
-                    counts: x.counts !== false, status: x.status === 'due' ? 'due' : 'pending' } : null)
-                .filter(x => x && x.out && x.in);
+                .map(x => {
+                    if (!x || typeof x !== 'object') return null;
+                    let pairs = Array.isArray(x.pairs) ? x.pairs.filter(p => p && isSafeId(p.o) && isSafeId(p.i)).slice(0, 11).map(p => ({ o: p.o, i: p.i })) : [];
+                    if (!pairs.length && isSafeId(x.out) && isSafeId(x.in)) pairs = [{ o: x.out, i: x.in }];
+                    return pairs.length ? { id: isSafeId(x.id) ? x.id : newId('ps'), min: toInt(x.min, 0, 0, 200), pairs,
+                        counts: x.counts !== false, status: x.status === 'due' ? 'due' : 'pending' } : null;
+                })
+                .filter(Boolean);
+            const tempNotes = (Array.isArray(raw.tempNotes) ? raw.tempNotes.slice(0, 60) : [])
+                .filter(x => x && typeof x === 'object' && cleanText(x.text, 300))
+                .map(x => ({ id: isSafeId(x.id) ? x.id : newId('tn'), min: toInt(x.min, 0, 0, 200), text: cleanText(x.text, 300) }));
             return {
                 currentTab: TABS.includes(raw.currentTab) ? raw.currentTab : 'setup',
                 selectedPlayerIds: new Set((Array.isArray(raw.selectedPlayerIds) ? raw.selectedPlayerIds : []).filter(id => ids.has(id))),
@@ -297,10 +303,11 @@
                 teamId: isSafeId(raw.teamId) ? raw.teamId : newId('tm'),
                 events: (Array.isArray(raw.events) ? raw.events.slice(0, 500) : []).map(sanitizeEvent).filter(Boolean),
                 plannedSubs,
+                tempNotes,
                 injTimers: (Array.isArray(raw.injTimers) ? raw.injTimers.slice(0, 10) : []).filter(x => x && typeof x === 'object' && isSafeId(x.id)).map(x => ({ id: x.id, label: cleanText(x.label, 40) || 'Jugador', endAt: toInt(x.endAt, 0, 0, 8.64e15), done: !!x.done, last: toInt(x.last, 0, 0, 8.64e15), n: toInt(x.n, 0, 0, 10) })),
                 formation: ((m.format === 'f8') ? F8_FORMATIONS[raw.formation] : FORMATIONS[raw.formation]) ? raw.formation : (m.format === 'f8' ? '3-3-1' : '4-4-2'),
                 fieldPos: sanitizeFieldPos(raw.fieldPos),
-                prefs: { wake: pr.wake !== false, vibrate: pr.vibrate !== false, autoDl: !!pr.autoDl }
+                prefs: { wake: pr.wake !== false, vibrate: pr.vibrate !== false, autoDl: !!pr.autoDl, bgAudio: pr.bgAudio !== false }
             };
         }
 
@@ -337,10 +344,10 @@
             { icon: 'fa-play', title: '2. Empieza el partido', text: 'Rellena los equipos, la jornada y la duración, y pulsa Iniciar. El cronómetro arranca y la voz te avisa del minuto cada pocos minutos si la activas.' },
             { icon: 'fa-bolt', title: '3. Registro rápido', text: 'En Directo, un toque en Gol nuestro, Gol rival o Tarjeta lo guarda con el minuto actual. Si te equivocas, el aviso te deja Deshacer o añadir asistencia y detalles.' },
             { icon: 'fa-hand-pointer', title: '4. Toca a un jugador', text: 'Toca a cualquier jugador en el campo para ver su menú: gol, amarilla, roja o cambio. Tocar a un suplente lo mete en un cambio. La Vista de campo (opcional) muestra tu once por formación y puedes arrastrar a los jugadores para colocarlos.' },
-            { icon: 'fa-right-left', title: '5. Cambios y ventanas', text: 'Puedes hacer varios cambios en una sola ventana, o cambios que no cuentan ventana. Con "Planificar cambio" la app te avisa al llegar al minuto elegido y lo confirmas con un toque.' },
+            { icon: 'fa-right-left', title: '5. Cambios y ventanas', text: 'Puedes hacer varios cambios en una sola ventana, o cambios que no cuentan ventana. Con "Planificar" anotas uno o varios cambios futuros: la app solo te lo recuerda al llegar el minuto y tú lo ejecutas cuando quieras.' },
             { icon: 'fa-mug-hot', title: '6. Descanso y final', text: '"Ir al Descanso" cuenta el tiempo de descanso y reanuda la 2ª parte. Al finalizar, el partido se guarda solo en el histórico.' },
             { icon: 'fa-timeline', title: '7. Cronología editable', text: 'Todos los sucesos aparecen en la Cronología. Puedes editar o borrar cualquiera (no solo el último) y el marcador y las estadísticas se recalculan solos.' },
-            { icon: 'fa-file-pdf', title: '8. Acta y compartir', text: 'En Acta / PDF tienes las estadísticas completas, el PDF y el CSV. El botón Compartir resumen lo envía por WhatsApp como texto o como PDF visual.' },
+            { icon: 'fa-file-pdf', title: '8. Acta y compartir', text: 'En Acta / PDF tienes las estadísticas completas, el PDF y el CSV. El botón Compartir resumen envía un PDF visual. En Temporada tienes además el Informe de temporada en PDF.' },
             { icon: 'fa-clock-rotate-left', title: '9. Histórico y temporada', text: 'En Histórico ves todos los partidos y, en Temporada, los acumulados por jugador (minutos, goles, asistencias, tarjetas). Cada jugador tiene un ID fijo, aunque cambie de dorsal.' },
             { icon: 'fa-lock', title: '10. Tus datos', text: 'Todo se guarda en este dispositivo, sin enviarse a ningún servidor. Haz copias completas de vez en cuando (Inicio → Uso en el banquillo → Copia completa) y, si quieres, protege la app con un PIN.' },
             { icon: 'fa-circle-question', title: '¡Listo!', text: 'Puedes repetir este recorrido cuando quieras desde Inicio → Uso en el banquillo → "Recorrido guiado". El botón "¿Cómo se usa?" tiene el manual completo.' }
@@ -537,10 +544,11 @@
                     teamId: newId('tm'),
                     events: [],
                     plannedSubs: [],
+                    tempNotes: [],
                     injTimers: [],
                     formation: '4-4-2',
                     fieldPos: {},
-                    prefs: { wake: true, vibrate: true, autoDl: false }
+                    prefs: { wake: true, vibrate: true, autoDl: false, bgAudio: true }
                 };
 
                 this.timerHandle = null;
@@ -548,7 +556,10 @@
                 // Al volver a la app (pantalla bloqueada, otra pestaña) el cronómetro se pone al día
                 document.addEventListener('visibilitychange', () => {
                     if (!document.hidden) { this.syncTimer(); this.refreshTimerDisplay(); this.updateWake(); }
+                    this.updateKeepAlive();
                 });
+
+                ['touchend', 'click'].forEach(ev => document.addEventListener(ev, () => { this.primeAudio(); this.updateKeepAlive(); }, { passive: true }));
 
                 this.loadFromStorage();
                 this.initApp();
@@ -634,13 +645,128 @@
                 } catch (e) { /* se ignora */ }
             }
 
+            // ---- Audio robusto (iPad/iPhone): se usan elementos <audio> con WAV generados, que sí suenan con el
+            // interruptor de silencio y con la pantalla apagada, y un audio silencioso en bucle que mantiene la app activa.
+            makeWavUrl(secs) {
+                const R = 8000;
+                let n = 0;
+                secs.forEach(x => { x.n = Math.round(x.d * R); n += x.n; });
+                const buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+                const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+                w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+                v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, R, true); v.setUint32(28, R, true);
+                v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+                let o = 44;
+                secs.forEach(x => {
+                    for (let i = 0; i < x.n; i++) {
+                        let b = 128;
+                        if (x.f) { const env = Math.min(1, i / 60, (x.n - i) / 60); b = 128 + Math.round((Math.sin(2 * Math.PI * x.f * i / R) >= 0 ? 1 : -1) * 115 * env); }
+                        v.setUint8(o++, b);
+                    }
+                });
+                return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+            }
+
+            alarmSecs() {
+                const a = [];
+                for (let i = 0; i < 8; i++) { a.push({ f: i % 2 ? 660 : 990, d: 0.26 }); a.push({ d: 0.04 }); }
+                return a;
+            }
+
+            chimeSecs() { return [{ f: 880, d: 0.18 }, { d: 0.05 }, { f: 1320, d: 0.32 }]; }
+
+            audioEl(key, secs, loop) {
+                this._els = this._els || {};
+                if (!this._els[key]) {
+                    const a = new Audio(this.makeWavUrl(secs));
+                    a.preload = 'auto'; a.loop = !!loop;
+                    this._els[key] = a;
+                }
+                return this._els[key];
+            }
+
+            playEl(key, secs) {
+                try {
+                    const a = this.audioEl(key, secs);
+                    a.muted = false; a.currentTime = 0;
+                    const p = a.play();
+                    if (p && p.catch) p.catch(() => this.webAlarm(key === 'chime'));
+                    return true;
+                } catch (e) { return false; }
+            }
+
+            // Se llama en el primer toque del usuario: iOS solo permite sonido y voz después de un gesto.
+            primeAudio() {
+                if (this._primed) return;
+                this._primed = true;
+                this.unlockAudio();
+                try {
+                    [['alarm', this.alarmSecs()], ['chime', this.chimeSecs()]].forEach(([k, secs]) => {
+                        const a = this.audioEl(k, secs);
+                        a.muted = true;
+                        const done = () => { try { a.pause(); a.currentTime = 0; } catch (e) { /* se ignora */ } a.muted = false; };
+                        const p = a.play();
+                        if (p && p.then) p.then(done).catch(() => { a.muted = false; this._primed = false; }); else done();
+                    });
+                } catch (e) { this._primed = false; }
+                try {
+                    if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); }
+                } catch (e) { /* se ignora */ }
+            }
+
+            chime() { if (!this.playEl('chime', this.chimeSecs())) this.webAlarm(true); }
+
+            // Audio silencioso en bucle mientras hay partido: mantiene el temporizador y los avisos activos con la pantalla apagada
+            updateKeepAlive() {
+                try {
+                    const want = !!this.state.prefs.bgAudio && (this.isLive() || (this.state.injTimers || []).length > 0);
+                    const a = this.audioEl('keep', [{ d: 2 }], true);
+                    if (want && a.paused) {
+                        const p = a.play(); if (p && p.catch) p.catch(() => {});
+                        if ('mediaSession' in navigator && window.MediaMetadata) {
+                            navigator.mediaSession.metadata = new MediaMetadata({ title: 'StatBench360', artist: 'Partido en juego' });
+                        }
+                    } else if (!want && !a.paused) a.pause();
+                } catch (e) { /* se ignora */ }
+            }
+
+            scheduleInjAudio(t) {
+                try {
+                    const secs = Math.max(1, Math.round((t.endAt - Date.now()) / 1000));
+                    this._injEls = this._injEls || {};
+                    const a = new Audio(this.makeWavUrl([{ d: secs }].concat(this.alarmSecs())));
+                    this._injEls[t.id] = a;
+                    const p = a.play();
+                    if (p && p.catch) p.catch(() => { delete this._injEls[t.id]; });
+                } catch (e) { /* se ignora */ }
+            }
+
+            dropInjAudio(id) {
+                const a = this._injEls && this._injEls[id];
+                if (a) { try { a.pause(); } catch (e) { /* se ignora */ } delete this._injEls[id]; }
+            }
+
+            dropAllInjAudio() { Object.keys(this._injEls || {}).forEach(id => this.dropInjAudio(id)); }
+
+            testSound() {
+                this._primed = false;
+                this.primeAudio();
+                setTimeout(() => { this.alarmSound(); this.vibrate([200, 100, 200]); this.speak('Prueba de sonido y voz correcta'); }, 150);
+                this.showToast('Probando sonido… si no oyes nada, sube el volumen y quita el modo silencio');
+            }
+
             alarmSound() {
+                if (this.playEl('alarm', this.alarmSecs())) return;
+                this.webAlarm(false);
+            }
+
+            webAlarm(short) {
                 try {
                     this.unlockAudio();
                     const ctx = this._actx;
                     if (!ctx) return;
                     const t0 = ctx.currentTime + 0.05;
-                    for (let i = 0; i < 8; i++) {
+                    for (let i = 0; i < (short ? 2 : 8); i++) {
                         const o = ctx.createOscillator(), g = ctx.createGain();
                         o.type = 'square';
                         o.frequency.value = i % 2 ? 660 : 990;
@@ -683,8 +809,12 @@
                 const num = cleanText(rivalNum, 3);
                 const label = p ? `#${p.number} ${p.name}` : (num ? `Rival #${num}` : (anon ? 'Jugador lesionado' : 'Jugador rival'));
                 this.unlockAudio();
+                (this.state.injTimers || []).filter(x => x.label === label).forEach(x => this.dropInjAudio(x.id));
                 this.state.injTimers = (this.state.injTimers || []).filter(x => x.label !== label);
-                this.state.injTimers.push({ id: newId('inj'), label, endAt: Date.now() + 60000, done: false, last: 0, n: 0 });
+                const nt = { id: newId('inj'), label, endAt: Date.now() + 60000, done: false, last: 0, n: 0 };
+                this.state.injTimers.push(nt);
+                this.scheduleInjAudio(nt);
+                this.updateKeepAlive();
                 this.addEvent('note', 'home', this.curMin(), { text: `Lesión: ${label} atendido, 1 minuto fuera del campo` });
                 this.startInjInterval();
                 this.closeModal();
@@ -699,7 +829,10 @@
                 let n = 1;
                 while (used.has(`Lesión ${n}`)) n++;
                 this.unlockAudio();
-                this.state.injTimers = (this.state.injTimers || []).concat([{ id: newId('inj'), label: `Lesión ${n}`, endAt: Date.now() + 60000, done: false, last: 0, n: 0 }]);
+                const nt = { id: newId('inj'), label: `Lesión ${n}`, endAt: Date.now() + 60000, done: false, last: 0, n: 0 };
+                this.state.injTimers = (this.state.injTimers || []).concat([nt]);
+                this.scheduleInjAudio(nt);
+                this.updateKeepAlive();
                 this.addEvent('note', 'home', this.curMin(), { text: `Lesión ${n}: jugador atendido, 1 minuto fuera del campo` });
                 this.startInjInterval();
                 this.saveToStorage();
@@ -727,6 +860,7 @@
             }
 
             cancelInjury(id) {
+                this.dropInjAudio(id);
                 this.state.injTimers = (this.state.injTimers || []).filter(x => x.id !== id);
                 this.saveToStorage();
                 this.renderInjuryFloat();
@@ -749,7 +883,8 @@
                         if (!t.done || (t.n < 4 && now - t.last >= 8000)) {
                             if (!t.done) { t.done = true; changed = true; }
                             t.last = now; t.n++;
-                            this.alarmSound();
+                            const ia = this._injEls && this._injEls[t.id];
+                            if (!(ia && !ia.paused && !ia.ended && t.n === 1)) this.alarmSound();
                             this.vibrate([400, 150, 400, 150, 400]);
                             if (t.n === 1) this.speak(`Atención. ${t.label.replace('#', 'dorsal ')} ya ha cumplido un minuto fuera y puede volver al campo.`);
                             this.saveToStorage();
@@ -791,6 +926,7 @@
                 const cur = m.timerSeconds;
                 const alerts = this.state.audioAlerts;
                 const messages = [];
+                let ring = false;
 
                 // Aviso periódico: se dispara al cruzar un minuto múltiplo del intervalo (aunque se pierda algún tick)
                 const curMin = Math.floor(cur / 60);
@@ -805,10 +941,14 @@
                     if (due.length > 0) {
                         alerts.customAlarms = alerts.customAlarms.filter(s => s > cur);
                         messages.push(`Atención. Alerta programada en el minuto ${Math.floor(Math.max(...due) / 60)}`);
+                        ring = true;
                     }
                 }
 
-                if (messages.length > 0) this.speak(messages.join('. '));
+                if (messages.length > 0) {
+                    if (ring) { this.alarmSound(); this.vibrate([300, 120, 300]); } else this.chime();
+                    this.speak(messages.join('. '));
+                }
             }
 
             goHomeTab() {
@@ -837,6 +977,8 @@
                 this.state.windows = { home: { used: 0, max: 3 }, away: { used: 0, max: 3 } };
                 this.state.events = [];
                 this.state.plannedSubs = [];
+                this.state.tempNotes = [];
+                this.dropAllInjAudio();
                 this.state.injTimers = [];
                 this.state.fieldPos = {};
                 this.state.audioAlerts.customAlarms = [];
@@ -1435,7 +1577,7 @@
             }
 
             setPref(key, value) {
-                if (!['wake', 'vibrate', 'autoDl'].includes(key)) return;
+                if (!['wake', 'vibrate', 'autoDl', 'bgAudio'].includes(key)) return;
                 this.state.prefs[key] = value === true || value === 'true';
                 if (key === 'vibrate' && this.state.prefs.vibrate) this.vibrate(80);
                 this.saveToStorage();
@@ -1451,11 +1593,14 @@
                 return `
                     <div class="bg-slate-900 border border-lasalle-yellow/30 rounded-2xl p-4 space-y-3">
                         <h2 class="text-xs font-black text-lasalle-yellow uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-mobile-screen"></i> Uso en el banquillo</h2>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 gap-2">
                             <div><label class="text-[11px] text-slate-300 font-bold">Pantalla encendida</label>${sel('wake', pr.wake)}</div>
                             <div><label class="text-[11px] text-slate-300 font-bold">Vibración</label>${sel('vibrate', pr.vibrate)}</div>
+                            <div><label class="text-[11px] text-slate-300 font-bold">Sonido con pantalla apagada</label>${sel('bgAudio', pr.bgAudio)}</div>
                             <div><label class="text-[11px] text-slate-300 font-bold">Copia al finalizar</label>${sel('autoDl', pr.autoDl)}</div>
                         </div>
+                        <button onclick="app.testSound()" class="w-full bg-slate-800 text-lasalle-yellow font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-volume-high mr-1"></i> Probar sonido, alarma y voz</button>
+                        <p class="text-[10px] text-slate-500">"Sonido con pantalla apagada" mantiene un audio silencioso durante el partido para que las alarmas suenen aunque el dispositivo se bloquee. En iPad/iPhone sube el volumen y quita el modo silencio.</p>
                         <p class="text-[10px] text-slate-500">"Copia al finalizar" descarga un archivo de copia completa al terminar cada partido.</p>
                         <div class="grid grid-cols-2 gap-2 pt-1">
                             <button onclick="app.openPinModal()" class="bg-slate-800 text-lasalle-yellow font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-lock mr-1"></i> ${hasPin ? 'PIN activo · cambiar' : 'Poner PIN'}</button>
@@ -1719,96 +1864,144 @@
             }
 
             // ============================ PLANIFICADOR DE CAMBIOS ============================
+            // Es solo una agenda de cambios futuros: al llegar el minuto SOLO se avisa. El cambio se ejecuta a mano
+            // (abriendo el cambio, que se puede modificar antes de confirmar) cuando el entrenador quiera.
+            planText(x) {
+                return x.pairs.map(p => `${this.pName(p.o)} → ${this.pName(p.i)}`).join(' · ');
+            }
+
             renderDueBanners() {
                 const due = this.state.plannedSubs.filter(x => x.status === 'due');
                 if (!due.length) return '';
                 return due.map(x => `
                     <div class="bg-amber-500/20 border-2 border-amber-400 rounded-2xl p-3 space-y-2 animate-pulse-slow">
-                        <div class="text-xs font-black text-amber-300 uppercase"><i class="fa-solid fa-bell mr-1"></i> Cambio previsto (min ${x.min}')</div>
-                        <div class="text-sm font-bold text-white">Sale ${esc(this.pName(x.out))} · Entra ${esc(this.pName(x.in))}</div>
+                        <div class="text-xs font-black text-amber-300 uppercase"><i class="fa-solid fa-bell mr-1"></i> Recordatorio de cambio (min ${x.min}')</div>
+                        <div class="text-sm font-bold text-white">${x.pairs.map(p => `Sale ${esc(this.pName(p.o))} · Entra ${esc(this.pName(p.i))}`).join('<br>')}</div>
+                        <p class="text-[10px] text-amber-200/80">Es solo un aviso: el cambio NO se ha realizado.</p>
                         <div class="grid grid-cols-3 gap-2">
-                            <button onclick="app.confirmPlanned('${x.id}')" class="bg-emerald-500 text-slate-950 font-black py-2 rounded-xl text-xs">Confirmar</button>
-                            <button onclick="app.postponePlanned('${x.id}')" class="bg-slate-800 text-white font-bold py-2 rounded-xl text-xs">+5 min</button>
-                            <button onclick="app.discardPlanned('${x.id}')" class="bg-slate-800 text-rose-300 font-bold py-2 rounded-xl text-xs">Descartar</button>
+                            <button onclick="app.runPlanned('${x.id}')" class="bg-emerald-500 text-slate-950 font-black py-2 rounded-xl text-xs">Abrir cambio</button>
+                            <button onclick="app.postponePlanned('${x.id}')" class="bg-slate-800 text-white font-bold py-2 rounded-xl text-xs">Avisar +5 min</button>
+                            <button onclick="app.discardPlanned('${x.id}')" class="bg-slate-800 text-rose-300 font-bold py-2 rounded-xl text-xs">Quitar</button>
                         </div>
                     </div>`).join('');
             }
 
             renderPlannerCard() {
                 if (this.isF8()) return '';
-                const list = this.state.plannedSubs.filter(x => x.status === 'pending').sort((a, b) => a.min - b.min);
+                const list = this.state.plannedSubs.slice().sort((a, b) => (a.min || 999) - (b.min || 999));
                 return `
                     <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl space-y-2">
                         <div class="flex items-center justify-between">
                             <div class="text-xs font-bold text-slate-300"><i class="fa-solid fa-calendar-check text-lasalle-yellow mr-1"></i> Cambios planificados</div>
                             <button onclick="app.openPlanModal()" class="bg-lasalle-yellow text-lasalle-darkblue font-extrabold px-3 py-1.5 rounded-xl text-xs">+ Planificar</button>
                         </div>
-                        ${list.length === 0 ? '<p class="text-[11px] text-slate-500">Sin cambios planificados. Te avisaré al llegar al minuto elegido.</p>' : list.map(x => `
-                            <div class="flex items-center justify-between gap-2 bg-slate-950 rounded-xl px-2.5 py-2 text-xs border border-slate-800">
-                                <span class="min-w-0 truncate"><b class="text-lasalle-yellow">${x.min}'</b> sale ${esc(this.pName(x.out))} → entra ${esc(this.pName(x.in))}</span>
-                                <button onclick="app.discardPlanned('${x.id}')" class="text-rose-400 shrink-0" aria-label="Quitar"><i class="fa-solid fa-xmark"></i></button>
+                        ${list.length === 0 ? '<p class="text-[11px] text-slate-500">Sin cambios planificados. Anota aquí los cambios que quieres hacer y ejecútalos cuando quieras. Si pones un minuto, solo te lo recordaré.</p>' : list.map(x => `
+                            <div class="bg-slate-950 rounded-xl px-2.5 py-2 text-xs border ${x.status === 'due' ? 'border-amber-400' : 'border-slate-800'} space-y-1.5">
+                                <div class="min-w-0"><b class="text-lasalle-yellow">${x.min ? x.min + "'" : 'Sin aviso'}</b> <span class="text-slate-200">${esc(this.planText(x))}</span></div>
+                                <div class="grid grid-cols-3 gap-1.5">
+                                    <button onclick="app.runPlanned('${x.id}')" class="bg-teal-600 text-white font-bold py-1.5 rounded-lg text-[11px]">Hacer cambio</button>
+                                    <button onclick="app.openPlanModal('${x.id}')" class="bg-slate-800 text-lasalle-yellow font-bold py-1.5 rounded-lg text-[11px]">Editar</button>
+                                    <button onclick="app.discardPlanned('${x.id}')" class="bg-slate-800 text-rose-300 font-bold py-1.5 rounded-lg text-[11px]">Quitar</button>
+                                </div>
                             </div>`).join('')}
                     </div>`;
             }
 
-            openPlanModal() {
-                const starters = this.state.squad.filter(p => p.status === 'starter').sort((a, b) => a.number - b.number);
-                const bench = this.state.squad.filter(p => p.status === 'bench').sort((a, b) => a.number - b.number);
+            openPlanModal(id) {
+                const starters = this.state.squad.filter(p => p.status === 'starter');
+                const bench = this.state.squad.filter(p => p.status === 'bench');
                 if (!starters.length || !bench.length) { alert('Necesitas titulares y suplentes para planificar un cambio.'); return; }
-                const opts = l => l.map(p => `<option value="${p.id}">#${esc(p.number)} ${esc(p.name)} (${esc(p.position)})</option>`).join('');
+                const x = id ? this.state.plannedSubs.find(p => p.id === id) : null;
+                this._planEdit = x ? x.id : null;
                 const cls = 'w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white mt-1';
                 document.getElementById('modal-container').innerHTML = `
                     <div class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                         <div class="bg-slate-900 border border-slate-800 w-full max-w-sm max-h-[92vh] overflow-y-auto rounded-3xl p-5 shadow-2xl relative space-y-3">
                             <button onclick="app.closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-                            <h3 class="font-bold text-base text-white pr-6">Planificar un cambio</h3>
-                            <div><label class="text-xs text-slate-400">Avisarme en el minuto</label><input type="number" id="plan-min" min="1" max="200" value="${Math.min(200, this.curMin() + 10)}" class="${cls}"></div>
-                            <div><label class="text-xs text-slate-400">Sale</label><select id="plan-out" class="${cls}">${opts(starters)}</select></div>
-                            <div><label class="text-xs text-slate-400">Entra</label><select id="plan-in" class="${cls}">${opts(bench)}</select></div>
-                            <label class="flex items-start gap-2 text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-2.5"><input type="checkbox" id="plan-counts" class="mt-0.5" checked><span>Cuenta como ventana de cambios</span></label>
+                            <h3 class="font-bold text-base text-white pr-6">${x ? 'Editar cambio planificado' : 'Planificar cambios'}</h3>
+                            <p class="text-xs text-slate-400">Puedes planificar varios cambios a la vez. No se hacen solos: tú los ejecutas cuando quieras.</p>
+                            <div id="plan-rows" class="space-y-2"></div>
+                            <button type="button" onclick="app.addPlanRow()" class="w-full bg-slate-800 text-teal-300 font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-plus mr-1"></i> Añadir otro cambio</button>
+                            <div><label class="text-xs text-slate-400">Recordármelo en el minuto (déjalo vacío si no quieres aviso)</label><input type="number" id="plan-min" min="1" max="200" inputmode="numeric" value="${x ? (x.min || '') : Math.min(200, this.curMin() + 10)}" class="${cls}"></div>
+                            <label class="flex items-start gap-2 text-xs text-slate-300 bg-slate-950 border border-slate-800 rounded-xl p-2.5"><input type="checkbox" id="plan-counts" class="mt-0.5" ${!x || x.counts ? 'checked' : ''}><span>Cuenta como ventana de cambios</span></label>
                             <button onclick="app.submitPlan()" class="w-full bg-lasalle-yellow text-lasalle-darkblue font-black py-2.5 rounded-xl text-sm">Guardar plan</button>
                         </div>
                     </div>`;
+                (x ? x.pairs : [{}]).forEach(p => this.addPlanRow(p));
+            }
+
+            addPlanRow(p) {
+                const wrap = document.getElementById('plan-rows');
+                if (!wrap) return;
+                const starters = this.state.squad.filter(q => q.status === 'starter').sort((a, b) => a.number - b.number);
+                const bench = this.state.squad.filter(q => q.status === 'bench').sort((a, b) => a.number - b.number);
+                const rows = Array.from(wrap.querySelectorAll('.plan-row'));
+                if (rows.length >= Math.min(starters.length, bench.length, 11)) { alert('No quedan más jugadores disponibles para añadir otro cambio.'); return; }
+                const usedOut = rows.map(r => r.querySelector('.plan-out').value), usedIn = rows.map(r => r.querySelector('.plan-in').value);
+                const row = document.createElement('div');
+                row.className = 'plan-row grid grid-cols-2 gap-2 items-end';
+                const cls = 'w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white mt-1';
+                row.innerHTML = `
+                    <div><label class="text-xs text-slate-400">Sale</label><select class="plan-out ${cls}">${this.subOptionsHtml(starters)}</select></div>
+                    <div><label class="text-xs text-slate-400">Entra</label><select class="plan-in ${cls}">${this.subOptionsHtml(bench)}</select></div>
+                    ${rows.length > 0 ? `<button type="button" onclick="this.closest('.plan-row').remove()" class="col-span-2 text-[11px] text-rose-300 underline text-left">Quitar este cambio</button>` : ''}`;
+                wrap.appendChild(row);
+                const fo = (p && p.o && starters.some(q => q.id === p.o)) ? p.o : (starters.find(q => !usedOut.includes(q.id)) || {}).id;
+                const fi = (p && p.i && bench.some(q => q.id === p.i)) ? p.i : (bench.find(q => !usedIn.includes(q.id)) || {}).id;
+                if (fo) row.querySelector('.plan-out').value = fo;
+                if (fi) row.querySelector('.plan-in').value = fi;
             }
 
             submitPlan() {
-                const v = i => document.getElementById(i).value;
-                const out = v('plan-out'), inn = v('plan-in');
-                if (!this.state.squad.some(p => p.id === out) || !this.state.squad.some(p => p.id === inn)) return;
-                if (this.state.plannedSubs.length >= 20) { alert('Hay demasiados cambios planificados.'); return; }
-                this.state.plannedSubs.push({ id: newId('ps'), min: toInt(v('plan-min'), 10, 0, 200), out, in: inn, counts: !!document.getElementById('plan-counts').checked, status: 'pending' });
+                const rows = Array.from(document.querySelectorAll('#plan-rows .plan-row'));
+                const pairs = rows.map(r => ({ o: r.querySelector('.plan-out').value, i: r.querySelector('.plan-in').value }));
+                const outs = pairs.map(x => x.o), ins = pairs.map(x => x.i);
+                const ok = pairs.length > 0 && pairs.every(x => this.state.squad.some(p => p.id === x.o) && this.state.squad.some(p => p.id === x.i));
+                if (!ok || new Set(outs).size !== outs.length || new Set(ins).size !== ins.length) {
+                    alert('Revisa los cambios: cada fila necesita un jugador que sale y otro que entra, sin repetir jugadores.');
+                    return;
+                }
+                const raw = String(document.getElementById('plan-min').value || '').trim();
+                const min = raw === '' ? 0 : toInt(raw, 0, 0, 200);
+                const counts = !!document.getElementById('plan-counts').checked;
+                const ex = this._planEdit ? this.state.plannedSubs.find(p => p.id === this._planEdit) : null;
+                if (ex) { ex.pairs = pairs; ex.min = min; ex.counts = counts; ex.status = 'pending'; }
+                else {
+                    if (this.state.plannedSubs.length >= 20) { alert('Hay demasiados cambios planificados.'); return; }
+                    this.state.plannedSubs.push({ id: newId('ps'), min, pairs, counts, status: 'pending' });
+                }
+                this._planEdit = null;
                 this.closeModal();
                 this.render();
             }
 
+            // Al llegar el minuto solo se AVISA (sonido, voz, vibración y banner). No se ejecuta nada.
             checkPlanned() {
                 const m = this.state.match;
                 if (this.isF8() || !this.state.plannedSubs.length || (m.status !== 'first_half' && m.status !== 'second_half')) return;
                 const cur = Math.floor(m.timerSeconds / 60);
-                const fresh = this.state.plannedSubs.filter(x => x.status === 'pending' && x.min <= cur);
+                const fresh = this.state.plannedSubs.filter(x => x.status === 'pending' && x.min > 0 && x.min <= cur);
                 if (!fresh.length) return;
                 fresh.forEach(x => { x.status = 'due'; });
                 this.vibrate([250, 120, 250, 120, 250]);
-                this.speak(`Cambio previsto. Sale ${this.nameOnly(fresh[0].out)}. Entra ${this.nameOnly(fresh[0].in)}.`);
+                this.chime();
+                this.speak(`Recordatorio de cambio previsto. ${fresh[0].pairs.map(p => `Sale ${this.nameOnly(p.o)}. Entra ${this.nameOnly(p.i)}`).join('. ')}.`);
                 this._needRender = true;
             }
 
             nameOnly(id) { const p = this.state.squad.find(x => x.id === id); return p ? p.name : 'jugador'; }
 
-            confirmPlanned(id) {
+            // Abre el cambio normal con los jugadores ya elegidos; se puede modificar y se confirma a mano.
+            runPlanned(id) {
                 const x = this.state.plannedSubs.find(p => p.id === id);
                 if (!x) return;
-                const po = this.state.squad.find(p => p.id === x.out), pi = this.state.squad.find(p => p.id === x.in);
-                if (!po || !pi || po.status !== 'starter' || pi.status !== 'bench') {
-                    this.state.plannedSubs = this.state.plannedSubs.filter(p => p.id !== id);
-                    this.showToast('El cambio ya no es posible (los jugadores han cambiado). Plan descartado.');
-                    this.render();
-                    return;
-                }
-                if (!this.registerHomeSub([{ o: x.out, i: x.in }], x.counts, this.curMin())) return;
-                this.state.plannedSubs = this.state.plannedSubs.filter(p => p.id !== id);
-                this.render();
-                this.showToast('Cambio registrado');
+                const pairs = x.pairs.filter(p => {
+                    const po = this.state.squad.find(q => q.id === p.o), pi = this.state.squad.find(q => q.id === p.i);
+                    return po && pi && po.status === 'starter' && pi.status === 'bench';
+                });
+                if (!pairs.length) { this.showToast('Los jugadores ya no están disponibles para este cambio. Edítalo o quítalo.'); return; }
+                if (pairs.length < x.pairs.length) this.showToast('Algún jugador ya no está disponible: revisa el cambio.');
+                this.openModal('sub_home', { pairs, counts: x.counts, planId: id });
             }
 
             postponePlanned(id) {
@@ -1822,6 +2015,59 @@
             discardPlanned(id) {
                 this.state.plannedSubs = this.state.plannedSubs.filter(p => p.id !== id);
                 this.render();
+            }
+
+            // ============================ NOTAS TEMPORALES (no van al acta ni a ningún resumen) ============================
+            openNotesModal() {
+                const list = (this.state.tempNotes || []).slice().reverse();
+                document.getElementById('modal-container').innerHTML = `
+                    <div class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm max-h-[92vh] overflow-y-auto rounded-3xl p-5 shadow-2xl relative space-y-3">
+                            <button onclick="app.closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white" aria-label="Cerrar"><i class="fa-solid fa-xmark text-lg"></i></button>
+                            <h3 class="font-bold text-base text-white pr-6">📝 Notas del partido</h3>
+                            <p class="text-[11px] text-slate-400">Solo para ti: <b>no salen en el acta, ni en el PDF, ni en el histórico</b>. Se borran al empezar un partido nuevo o al resetear.</p>
+                            <textarea id="note-tmp-text" rows="2" maxlength="300" placeholder="Ej: #7 cojea, probar 3-5-2 en la 2.ª parte" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sm text-white"></textarea>
+                            <button onclick="app.addTempNote()" class="w-full bg-lasalle-yellow text-lasalle-darkblue font-black py-2.5 rounded-xl text-sm">Añadir nota</button>
+                            ${list.length ? `<div class="space-y-1.5">${list.map(n => `
+                                <div class="flex items-start gap-2 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs">
+                                    <span class="text-lasalle-yellow font-black shrink-0">${n.min}'</span>
+                                    <span class="flex-1 text-slate-200 break-words">${esc(n.text)}</span>
+                                    <button onclick="app.delTempNote('${n.id}')" class="text-rose-400 shrink-0" aria-label="Borrar nota"><i class="fa-solid fa-xmark"></i></button>
+                                </div>`).join('')}</div>
+                                <button onclick="app.clearTempNotes()" class="text-[11px] text-rose-300 underline">Borrar todas las notas</button>` : '<p class="text-[11px] text-slate-500">Aún no hay notas.</p>'}
+                        </div>
+                    </div>`;
+            }
+
+            addTempNote() {
+                const el = document.getElementById('note-tmp-text');
+                const text = cleanText(el ? el.value : '', 300);
+                if (!text) return;
+                if ((this.state.tempNotes || []).length >= 60) { this.showToast('Máximo 60 notas'); return; }
+                this.state.tempNotes = (this.state.tempNotes || []).concat([{ id: newId('tn'), min: this.curMin(), text }]);
+                this.saveToStorage();
+                this.openNotesModal();
+                this.refreshNotesBadge();
+            }
+
+            delTempNote(id) {
+                this.state.tempNotes = (this.state.tempNotes || []).filter(n => n.id !== id);
+                this.saveToStorage();
+                this.openNotesModal();
+                this.refreshNotesBadge();
+            }
+
+            clearTempNotes() {
+                if (!confirm('¿Borrar todas las notas temporales?')) return;
+                this.state.tempNotes = [];
+                this.saveToStorage();
+                this.openNotesModal();
+                this.refreshNotesBadge();
+            }
+
+            refreshNotesBadge() {
+                const el = document.getElementById('notes-badge');
+                if (el) el.textContent = (this.state.tempNotes || []).length || '';
             }
 
             // ============================ VISTA DE CAMPO (opcional) ============================
@@ -2319,6 +2565,7 @@
                             .map(([a, b, c]) => `<div class="bg-slate-900 border border-slate-800 rounded-xl py-2"><div class="text-base font-black ${c}">${b}</div><div class="text-[10px] text-slate-400">${a}</div></div>`).join('')}
                     </div>
                     <div class="flex items-center gap-1.5 text-[11px] text-slate-400">Últimos: ${form.map(f => `<span class="${f[1]} text-white font-black w-6 h-6 rounded flex items-center justify-center">${f[0]}</span>`).join('')}</div>
+                    <button onclick="app.shareSeasonPDF()" class="w-full bg-lasalle-yellow text-lasalle-darkblue font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-pdf"></i> Informe de temporada en PDF</button>
                     <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl">
                         <div class="overflow-x-auto">
                             <table class="w-full text-[11px] text-slate-300">
@@ -2369,24 +2616,9 @@
             }
 
             openShare(id) {
-                const e = this.shareEntry(id);
-                if (!e) return;
+                if (!this.shareEntry(id)) return;
                 this._shareId = id;
-                const text = this.summaryLines(e).join('\n').trim() + '\n\n— StatBench360';
-                this._shareText = text;
-                document.getElementById('modal-container').innerHTML = `
-                    <div class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                        <div class="bg-slate-900 border border-slate-800 w-full max-w-sm max-h-[92vh] overflow-y-auto rounded-3xl p-5 shadow-2xl relative space-y-3">
-                            <button onclick="app.closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-                            <h3 class="font-bold text-base text-white pr-6">Compartir resumen</h3>
-                            <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] text-slate-200 whitespace-pre-wrap max-h-56 overflow-y-auto">${esc(text)}</pre>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button onclick="app.shareText()" class="bg-emerald-600 text-white font-black py-2.5 rounded-xl text-xs"><i class="fa-brands fa-whatsapp mr-1"></i> Enviar texto</button>
-                                <button onclick="app.copyShare()" class="bg-slate-800 text-lasalle-yellow font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-copy mr-1"></i> Copiar</button>
-                                <button onclick="app.sharePDF()" class="bg-lasalle-yellow text-lasalle-darkblue font-black py-2.5 rounded-xl text-xs col-span-2"><i class="fa-solid fa-file-pdf mr-1"></i> Enviar PDF visual (para la dirección)</button>
-                            </div>
-                        </div>
-                    </div>`;
+                this.sharePDF();
             }
 
             shareText() {
@@ -2547,6 +2779,180 @@
                 return doc;
             }
 
+
+            // ============================ INFORME DE TEMPORADA (PDF) ============================
+            buildSeasonPDF(list) {
+                const jsPDF = window.jspdf.jsPDF;
+                const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+                const W = 210, M = 12;
+                const NAVY = [0, 43, 102], YEL = [255, 204, 0], INK = [30, 41, 59], MUTE = [100, 116, 139], CARD = [241, 245, 249], LINE = [203, 213, 225];
+                const GREEN = [22, 163, 74], AMBER = [217, 119, 6], RED = [220, 38, 38];
+                const t = v => String(v == null ? '' : v).replace(/[^ -ÿ]/g, '?');
+                const { rows, players } = this.seasonData(list);
+                const ms = rows.slice().sort((a, b) => a.match.date.localeCompare(b.match.date) || a.savedAt - b.savedAt);
+                let w = 0, d = 0, l = 0, gf = 0, gc = 0;
+                ms.forEach(e => { const [a, b] = this.ownGoals(e); gf += a; gc += b; if (a > b) w++; else if (a < b) l++; else d++; });
+                const n = ms.length;
+                const lastE = ms[n - 1];
+                const teamName = lastE ? (lastE.match.isHome ? lastE.match.homeTeam : lastE.match.awayTeam) : 'Equipo';
+                const comp = this.seasonComp || 'Todas las competiciones';
+                const col = r => r > 0 ? GREEN : (r < 0 ? RED : AMBER);
+                let y = 0;
+                const newPage = () => { doc.addPage(); y = M; };
+                const need = h => { if (y + h > 284) newPage(); };
+                const sectionTitle = (txt, x, wd) => {
+                    doc.setFillColor(...NAVY); doc.roundedRect(x, y, wd, 7, 1.5, 1.5, 'F');
+                    doc.setTextColor(...YEL); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(t(txt), x + 3, y + 4.9);
+                };
+
+                // Cabecera
+                doc.setFillColor(...NAVY); doc.rect(0, 0, W, 34, 'F');
+                doc.setFillColor(...YEL); doc.rect(0, 34, W, 2.2, 'F');
+                try { doc.addImage(LOGO_DATA, 'PNG', M, 3, 23, 27); } catch (err) { /* sin logo */ }
+                doc.setTextColor(...YEL); doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.text('StatBench360', 40, 16);
+                doc.setTextColor(255, 255, 255); doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+                doc.text(t(`INFORME DE TEMPORADA  |  ${teamName}`), 40, 24);
+                doc.setFontSize(8.5); doc.setTextColor(203, 213, 225);
+                doc.text(t(`${comp}  |  ${n} partido${n === 1 ? '' : 's'}${n ? `  |  ${ms[0].match.date} a ${lastE.match.date}` : ''}`), 40, 29.5);
+
+                // Cifras principales
+                y = 42;
+                const kp = [['PJ', n, NAVY], ['V', w, GREEN], ['E', d, AMBER], ['D', l, RED], ['GF', gf, NAVY], ['GC', gc, NAVY], ['PUNTOS', w * 3 + d, NAVY]];
+                const kw = (W - 2 * M - 6 * 3) / 7;
+                kp.forEach((k, i) => {
+                    const x = M + i * (kw + 3);
+                    doc.setFillColor(...CARD); doc.roundedRect(x, y, kw, 20, 2.5, 2.5, 'F');
+                    doc.setDrawColor(...LINE); doc.roundedRect(x, y, kw, 20, 2.5, 2.5, 'S');
+                    doc.setTextColor(...k[2]); doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.text(String(k[1]), x + kw / 2, y + 11.5, { align: 'center' });
+                    doc.setTextColor(...MUTE); doc.setFontSize(7.5); doc.text(k[0], x + kw / 2, y + 17, { align: 'center' });
+                });
+                y += 25;
+                doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...INK);
+                const dg = gf - gc;
+                doc.text(t(`Diferencia de goles: ${dg > 0 ? '+' : ''}${dg}   |   Victorias: ${n ? Math.round(w / n * 100) : 0}%   |   Goles a favor por partido: ${n ? (gf / n).toFixed(1) : '0.0'}   |   en contra: ${n ? (gc / n).toFixed(1) : '0.0'}`), M, y);
+                y += 6;
+                // Forma
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(...NAVY); doc.text('ULTIMOS 5:', M, y + 4);
+                ms.slice(-5).reverse().forEach((e, i) => {
+                    const [a, b] = this.ownGoals(e);
+                    const c = col(a - b);
+                    doc.setFillColor(...c); doc.roundedRect(M + 24 + i * 9, y, 7.5, 6, 1.2, 1.2, 'F');
+                    doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.text(a > b ? 'V' : (a < b ? 'D' : 'E'), M + 24 + i * 9 + 3.75, y + 4.2, { align: 'center' });
+                });
+                y += 11;
+
+                // Rankings
+                const top = (key, minv) => players.filter(p => p[key] >= (minv || 1)).slice().sort((a, b) => (b[key] - a[key]) || a.name.localeCompare(b.name, 'es')).slice(0, 5);
+                const cw = (W - 2 * M - 8) / 3;
+                const cols = [['GOLEADORES', top('g'), 'g', ''], ['ASISTENTES', top('a'), 'a', ''], ['MAS MINUTOS', top('mins'), 'mins', "'"]];
+                need(9 + 5 * 6);
+                cols.forEach((c, i) => {
+                    const x = M + i * (cw + 4);
+                    const saveY = y;
+                    sectionTitle(c[0], x, cw);
+                    let yy = y + 12;
+                    doc.setFontSize(8.5);
+                    if (!c[1].length) { doc.setFont('helvetica', 'italic'); doc.setTextColor(...MUTE); doc.text('Sin registros', x + 2, yy); }
+                    c[1].forEach((p, k) => {
+                        if (k % 2 === 0) { doc.setFillColor(...CARD); doc.rect(x, yy - 4, cw, 6, 'F'); }
+                        doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK); doc.text(t(p.name).slice(0, 22), x + 2, yy);
+                        doc.setFont('helvetica', 'bold'); doc.setTextColor(...NAVY); doc.text(`${p[c[2]]}${c[3]}`, x + cw - 2, yy, { align: 'right' });
+                        yy += 6;
+                    });
+                    y = saveY;
+                });
+                y += 12 + 5 * 6 + 2;
+
+                // Partidos
+                need(24);
+                sectionTitle('PARTIDOS', M, W - 2 * M);
+                y += 9;
+                const header = () => {
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...MUTE);
+                    doc.text('FECHA', M + 2, y + 3); doc.text('J.', M + 26, y + 3); doc.text('RIVAL', M + 36, y + 3); doc.text('COMPETICION', M + 108, y + 3); doc.text('RESULTADO', W - M - 2, y + 3, { align: 'right' });
+                    y += 5;
+                };
+                header();
+                ms.forEach((e, i) => {
+                    if (y + 6 > 284) { newPage(); header(); }
+                    if (i % 2 === 0) { doc.setFillColor(...CARD); doc.rect(M, y, W - 2 * M, 6, 'F'); }
+                    const [a, b] = this.ownGoals(e);
+                    const rival = e.match.isHome ? e.match.awayTeam : e.match.homeTeam;
+                    const cy = y + 4.2;
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...INK);
+                    doc.text(t(e.match.date), M + 2, cy); doc.text(t(e.match.matchday), M + 26, cy);
+                    doc.text(t(`${rival} (${e.match.isHome ? 'L' : 'V'})`).slice(0, 38), M + 36, cy);
+                    doc.setTextColor(...MUTE); doc.text(t(e.match.competition).slice(0, 24), M + 108, cy);
+                    doc.setFillColor(...col(a - b)); doc.roundedRect(W - M - 24, y + 0.9, 22, 4.4, 1, 1, 'F');
+                    doc.setFont('helvetica', 'bold'); doc.setTextColor(255, 255, 255); doc.text(`${a} - ${b}  ${a > b ? 'V' : (a < b ? 'D' : 'E')}`, W - M - 13, cy - 0.2, { align: 'center' });
+                    y += 6;
+                });
+
+                // Jugadores
+                y += 4;
+                need(24);
+                sectionTitle('JUGADORES (acumulado)', M, W - 2 * M);
+                y += 9;
+                const ps = players.slice().sort((a, b) => (b.g - a.g) || (b.a - a.a) || (b.mins - a.mins) || a.name.localeCompare(b.name, 'es'));
+                const maxM = Math.max(1, ...ps.map(p => p.mins));
+                const xs = { name: M + 2, pj: M + 70, st: M + 82, bar: M + 96, min: M + 124, g: M + 142, a: M + 154, am: M + 166, rj: M + 177 };
+                const phead = () => {
+                    doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...MUTE);
+                    doc.text('JUGADOR', xs.name, y + 3); doc.text('PJ', xs.pj, y + 3); doc.text('TIT', xs.st, y + 3); doc.text('MINUTOS', xs.bar, y + 3);
+                    doc.text('G', xs.g, y + 3); doc.text('ASIST', xs.a, y + 3); doc.text('AM', xs.am, y + 3); doc.text('RJ', xs.rj, y + 3);
+                    y += 5;
+                };
+                phead();
+                ps.forEach((p, i) => {
+                    if (y + 6 > 284) { newPage(); phead(); }
+                    if (i % 2 === 0) { doc.setFillColor(...CARD); doc.rect(M, y, W - 2 * M, 6, 'F'); }
+                    const cy = y + 4.2;
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...INK);
+                    doc.text(t(p.name).slice(0, 32), xs.name, cy); doc.text(String(p.pj), xs.pj, cy); doc.text(String(p.starts), xs.st, cy);
+                    doc.setFillColor(...LINE); doc.roundedRect(xs.bar, y + 1.8, 22, 2.4, 1, 1, 'F');
+                    if (p.mins > 0) { doc.setFillColor(14, 165, 233); doc.roundedRect(xs.bar, y + 1.8, Math.max(1.5, 22 * p.mins / maxM), 2.4, 1, 1, 'F'); }
+                    doc.text(`${p.mins}'`, xs.min, cy);
+                    doc.setFont('helvetica', p.g ? 'bold' : 'normal'); doc.setTextColor(...(p.g ? GREEN : INK)); doc.text(String(p.g), xs.g, cy);
+                    doc.setFont('helvetica', p.a ? 'bold' : 'normal'); doc.setTextColor(...(p.a ? NAVY : INK)); doc.text(String(p.a), xs.a + 2, cy);
+                    doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+                    if (p.y) { doc.setFillColor(250, 204, 21); doc.roundedRect(xs.am, y + 1.2, 2.8, 3.8, 0.4, 0.4, 'F'); doc.text(`x${p.y}`, xs.am + 3.6, cy); }
+                    if (p.r) { doc.setFillColor(220, 38, 38); doc.roundedRect(xs.rj, y + 1.2, 2.8, 3.8, 0.4, 0.4, 'F'); if (p.r > 1) doc.text(`x${p.r}`, xs.rj + 3.6, cy); }
+                    y += 6;
+                });
+
+                const pages = doc.getNumberOfPages();
+                for (let k = 1; k <= pages; k++) {
+                    doc.setPage(k);
+                    doc.setDrawColor(...LINE); doc.line(M, 288, W - M, 288);
+                    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTE);
+                    doc.text(t(`Generado con StatBench360  |  Informe de temporada  |  ${teamName}`), M, 293);
+                    doc.text(`${k}/${pages}`, W - M, 293, { align: 'right' });
+                }
+                return { doc, teamName };
+            }
+
+            async shareSeasonPDF() {
+                const list = this.loadHistory();
+                if (!this.seasonData(list).rows.length) { this.showToast('No hay partidos para el informe'); return; }
+                if (!(window.jspdf && window.jspdf.jsPDF)) { alert('No se pudo cargar el generador de PDF (necesita conexión la primera vez).'); return; }
+                let res;
+                try { res = this.buildSeasonPDF(list); } catch (err) { console.error(err); alert('No se pudo crear el informe.'); return; }
+                const safe = x => String(x).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24);
+                const name = `Informe_Temporada_${safe(res.teamName)}_${localDate()}.pdf`;
+                const blob = res.doc.output('blob');
+                try {
+                    const file = new File([blob], name, { type: 'application/pdf' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: 'Informe de temporada' });
+                        this.showToast('Informe enviado');
+                        return;
+                    }
+                } catch (err) {
+                    if (err && err.name === 'AbortError') return;
+                }
+                await this.saveFile(name, res.doc.output('arraybuffer'), 'application/pdf');
+            }
+
             async sharePDF() {
                 const e = this.shareEntry(this._shareId);
                 if (!e) return;
@@ -2667,6 +3073,7 @@
                 }
                 this.bindPitchDrag();
                 this.updateWake();
+                this.updateKeepAlive();
                 this.saveToStorage();
             }
 
@@ -2970,6 +3377,7 @@
                         ${this.isLive() ? `<button onclick="app.quickInjury()" class="bg-amber-500 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow active:scale-95" aria-label="Jugador lesionado: cuenta atrás de 1 minuto">
                             🩹 Lesión 1'
                         </button>` : ''}
+                        ${(this.state.match.status !== 'setup' && this.state.match.status !== 'finished') ? `<button onclick="app.openNotesModal()" class="bg-slate-800 border border-slate-600 text-white font-extrabold px-2.5 py-1.5 rounded-xl text-xs flex items-center gap-1 active:scale-95" aria-label="Notas temporales del partido">📝<span id="notes-badge" class="text-lasalle-yellow">${(this.state.tempNotes || []).length || ''}</span></button>` : ''}
                         <div class="text-xs font-bold text-slate-300 hidden min-[380px]:block">
                             <i class="fa-solid fa-bell text-lasalle-yellow mr-1"></i> Alarma
                         </div>
@@ -3220,7 +3628,7 @@
                         ${this.state.match.status === 'finished' ? `<button onclick="app.switchTab('setup')" class="bg-slate-800 text-lasalle-yellow px-2.5 py-1 rounded-lg text-xs font-bold border border-lasalle-yellow/30"><i class="fa-solid fa-arrow-left"></i> Configuración</button>` : ''}
                     </h2>
 
-                    <button onclick="app.openShare(null)" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-share-nodes"></i> Compartir resumen (WhatsApp)</button>
+                    <button onclick="app.openShare(null)" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-pdf"></i> Compartir resumen en PDF</button>
 
                     <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl space-y-2">
                         <div class="text-xs font-bold text-lasalle-yellow">RESUMEN DEL ENCUENTRO (${esc(this.state.match.competition || 'Competición')})</div>
@@ -3260,9 +3668,6 @@
                     </div>
 
                     <div class="space-y-3">
-                        <button onclick="app.generateWhatsAppPDF()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
-                            <i class="fa-brands fa-whatsapp text-lg"></i> Compartir Acta PDF por WhatsApp
-                        </button>
                         <button onclick="app.exportGoogleDriveSheet()" class="w-full bg-lasalle-yellow hover:bg-lasalle-yellowhover text-lasalle-darkblue font-black py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
                             <i class="fa-solid fa-file-excel"></i> Exportar Datos y Estadísticas (Sheet)
                         </button>
@@ -3329,7 +3734,7 @@
                         '<b>Directo:</b> marcador, reloj y botones de eventos.',
                         '<b>Plantilla:</b> quién está en el campo, banquillo y expulsados.',
                         '<b>Cronología:</b> todos los sucesos ordenados por minuto.',
-                        '<b>Acta / PDF:</b> resumen, estadísticas de cada jugador (minutos, goles, asistencias, tarjetas), acta en PDF para compartir por WhatsApp y exportación a hoja de cálculo.'
+                        '<b>Acta / PDF:</b> resumen, estadísticas de cada jugador (minutos, goles, asistencias, tarjetas), resumen en PDF visual para compartir y exportación a hoja de cálculo.'
                     ])),
 
                     section('fa-clock-rotate-left', '6. Histórico de partidos', bullets([
@@ -3360,7 +3765,9 @@
                         '<b>Registro rápido:</b> en Directo, pulsa <b>Gol nuestro</b>, <b>Gol rival</b> o <b>Tarjeta</b>. Se guarda con el minuto actual y aparece un aviso para <b>añadir asistencia / editar</b> o <b>Deshacer</b>.',
                         '<b>Toca a un jugador</b> (en Directo o en la Vista de campo) para abrir su menú: gol, amarilla, roja, cambiarlo o marcar que dio una asistencia. Tocar a un suplente lo mete en un cambio.',
                         '<b>Cronología:</b> cada suceso tiene un lápiz y una papelera. Puedes editar o borrar <b>cualquier</b> suceso (no solo el último) y el marcador, las ventanas y las estadísticas se recalculan solos. Los sucesos registrados con una versión antigua de la app no se pueden editar.',
-                        '<b>Planificar cambios:</b> en Directo, "Planificar cambio" te avisa (voz, vibración y aviso en pantalla) al llegar al minuto elegido. Pulsa <b>Confirmar</b> y queda registrado; o posponlo 5 min / descártalo.',
+                        '<b>Planificar cambios:</b> en Directo, "+ Planificar" te deja anotar <b>uno o varios cambios futuros</b> (como un cambio normal, con "Añadir otro cambio"). Si pones un minuto, al llegar solo te lo <b>recuerda</b> (sonido, voz, vibración y aviso): <b>no se hace solo</b>. Pulsa <b>Hacer cambio</b> cuando quieras: se abre el cambio con los jugadores elegidos, lo puedes modificar y lo confirmas tú. También puedes editarlo o quitarlo.',
+                        '<b>Notas temporales:</b> el botón 📝 de Directo guarda notas rápidas solo para ti. <b>No salen en el acta, el PDF ni el histórico</b> y se borran al empezar otro partido.',
+                        '<b>Sonido en iPad/iPhone:</b> sube el volumen, quita el modo silencio y toca "Probar sonido, alarma y voz" en Inicio → Uso en el banquillo. Con "Sonido con pantalla apagada" activado las alarmas suenan aunque se bloquee la pantalla.',
                         '<b>Pantalla encendida y vibración:</b> se activan en Inicio → botón "Uso en el banquillo". Con partido en juego el móvil no apagará la pantalla (si el navegador lo permite).',
                         '<b>Vista de campo (opcional):</b> en Directo → "Vista de campo". Muestra tus titulares según la formación elegida. Activa "Mover jugadores" y arrástralos por el campo (también en el descanso); con el modo apagado, tocar a un jugador abre su menú. También puedes colocarlos antes del partido en Inicio → "Colocar jugadores en el campo". El que entra en un cambio ocupa el sitio del que sale.',
                         '<b>Temporada:</b> en Histórico → "Temporada" ves los acumulados por jugador (partidos, minutos, goles, asistencias, tarjetas), con filtro de competición y orden.',
@@ -3368,7 +3775,8 @@
                         '<b>Inicio plegable:</b> cada tarjeta de Inicio (Datos del partido, Aviso por voz, Cargar plantilla, Alineación) se pliega y se despliega tocando su título. La app recuerda lo que dejaste abierto. "Plegar todo" y "Desplegar todo" están arriba.',
                         '<b>Recorrido guiado:</b> Inicio → Uso en el banquillo → "Recorrido guiado de la app" lo repite cuando quieras. Se abre solo al entrar hasta que marques "No mostrar más".',
                         '<b>Borrar datos:</b> en Histórico puedes borrar todo el histórico, y en Temporada las estadísticas de todos los jugadores o de uno solo (papelera). Antes de borrar la app te pregunta si quieres descargar una copia de seguridad. <b>Dónde se guardan los datos:</b> en este navegador y dispositivo (pulsa "¿Dónde se guardan?"); las copias descargadas van a la carpeta de descargas.',
-                        '<b>Compartir resumen:</b> en el Acta o en el detalle de un partido del histórico. Puedes enviar texto por WhatsApp, copiarlo o enviar un <b>PDF visual de una página</b> (marcador, goles, tarjetas, cambios y tabla de jugadores) pensado para la dirección del equipo.',
+                        '<b>Compartir resumen:</b> en el Acta o en el detalle de un partido del histórico. Genera un <b>PDF visual de una página</b> (marcador, goles, tarjetas, cambios y tabla de jugadores) y lo envía por WhatsApp u otra app.',
+                        '<b>Informe de temporada:</b> en Histórico → Temporada, "Informe de temporada en PDF": resultados, goleadores, asistentes, minutos y tabla de jugadores del equipo y la competición elegidos.',
                         '<b>PIN y copias:</b> en Inicio puedes poner un PIN para abrir la app y hacer una copia completa (partido + histórico). La app también guarda copias automáticas al empezar, finalizar y resetear.'
                     ])),
                     section('fa-people-group', '9. Fútbol 8 y lesiones', bullets([
@@ -3886,7 +4294,7 @@
                             </div>`).join('')}
                     </div>
 
-                    <button onclick="app.openShare('${e.id}')" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-share-nodes"></i> Compartir resumen (WhatsApp)</button>
+                    <button onclick="app.openShare('${e.id}')" class="w-full bg-emerald-600 text-white font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-pdf"></i> Compartir resumen en PDF</button>
                     <button onclick="app.openSendMatches(['${e.id}'])" class="w-full bg-slate-800 text-emerald-300 border border-emerald-600/50 font-black py-3 rounded-xl text-xs flex items-center justify-center gap-1.5"><i class="fa-solid fa-paper-plane"></i> Enviar este partido (archivo para importar)</button>
 
                     <div class="grid grid-cols-1 gap-2">
@@ -4464,6 +4872,7 @@
                 m.lastTickMs = Date.now();
                 this.state.matchResetted = false;
                 this.state.plannedSubs = [];
+                this.state.tempNotes = [];
                 m.matchId = newId('m');
                 // Guarda la convocatoria inicial para poder empezar otro partido con la misma plantilla
                 this.state.squad.forEach(p => { p.initialStatus = p.status; });
@@ -4857,6 +5266,7 @@
             }
 
             openModal(type, preset) {
+                this._planRun = (preset && preset.planId) || null;
                 if (type === 'sub_home' && this.isF8()) { this.openSubF8(preset); return; }
                 const container = document.getElementById('modal-container');
                 const currentMin = Math.floor(this.state.match.timerSeconds / 60);
@@ -5055,7 +5465,17 @@
                         }
                     }
                     if (type === 'card_home' && preset.player) { setv('card-player', preset.player); this.updateCardTypeOptions(preset.player); }
-                    if (type === 'sub_home') {
+                    if (type === 'sub_home' && Array.isArray(preset.pairs) && preset.pairs.length) {
+                        const wrap = document.getElementById('sub-rows');
+                        wrap.innerHTML = '';
+                        preset.pairs.forEach(p => {
+                            this.addSubRow();
+                            const rs = wrap.querySelectorAll('.sub-row'), r = rs[rs.length - 1];
+                            if (r) { r.querySelector('.sub-out').value = p.o; r.querySelector('.sub-in').value = p.i; }
+                        });
+                        const c = document.getElementById('sub-counts');
+                        if (c && typeof preset.counts === 'boolean') c.checked = preset.counts;
+                    } else if (type === 'sub_home') {
                         const row = document.querySelector('#sub-rows .sub-row');
                         if (row) { setv('', ''); if (preset.out) row.querySelector('.sub-out').value = preset.out; if (preset.in) row.querySelector('.sub-in').value = preset.in; }
                     }
@@ -5343,6 +5763,7 @@
                     return;
                 }
                 if (!this.registerHomeSub(pairs, counts, this.readMinute('sub-min'))) return;
+                if (this._planRun) { this.state.plannedSubs = this.state.plannedSubs.filter(p => p.id !== this._planRun); this._planRun = null; }
                 this.closeModal();
                 this.render();
             }
@@ -5689,7 +6110,7 @@
             }
         }
 
-        console.info('StatBench360 - versión generada: 2026-11-19 20:59 (Europe/Madrid)');
+        console.info('StatBench360 - versión generada: 2026-11-22 08:40 (Europe/Madrid)');
         const app = new FutStatApp();
         app.initOffline();
     </script>
