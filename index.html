@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- StatBench360 | Versión generada: 2026-11-22 08:40 (Europe/Madrid) -->
+<!-- StatBench360 | Versión generada: 2026-11-22 09:05 (Europe/Madrid) -->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="generator-version" content="2026-11-22 08:40 (Europe/Madrid)">
+    <meta name="generator-version" content="2026-11-22 09:05 (Europe/Madrid)">
     <title>StatBench360</title>
     <link rel="manifest" href="manifest.webmanifest">
     <meta name="theme-color" content="#002B66">
@@ -307,7 +307,7 @@
                 injTimers: (Array.isArray(raw.injTimers) ? raw.injTimers.slice(0, 10) : []).filter(x => x && typeof x === 'object' && isSafeId(x.id)).map(x => ({ id: x.id, label: cleanText(x.label, 40) || 'Jugador', endAt: toInt(x.endAt, 0, 0, 8.64e15), done: !!x.done, last: toInt(x.last, 0, 0, 8.64e15), n: toInt(x.n, 0, 0, 10) })),
                 formation: ((m.format === 'f8') ? F8_FORMATIONS[raw.formation] : FORMATIONS[raw.formation]) ? raw.formation : (m.format === 'f8' ? '3-3-1' : '4-4-2'),
                 fieldPos: sanitizeFieldPos(raw.fieldPos),
-                prefs: { wake: pr.wake !== false, vibrate: pr.vibrate !== false, autoDl: !!pr.autoDl, bgAudio: pr.bgAudio !== false }
+                prefs: { wake: pr.wake !== false, vibrate: pr.vibrate !== false, bgAudio: pr.bgAudio !== false }
             };
         }
 
@@ -349,8 +349,8 @@
             { icon: 'fa-timeline', title: '7. Cronología editable', text: 'Todos los sucesos aparecen en la Cronología. Puedes editar o borrar cualquiera (no solo el último) y el marcador y las estadísticas se recalculan solos.' },
             { icon: 'fa-file-pdf', title: '8. Acta y compartir', text: 'En Acta / PDF tienes las estadísticas completas, el PDF y el CSV. El botón Compartir resumen envía un PDF visual. En Temporada tienes además el Informe de temporada en PDF.' },
             { icon: 'fa-clock-rotate-left', title: '9. Histórico y temporada', text: 'En Histórico ves todos los partidos y, en Temporada, los acumulados por jugador (minutos, goles, asistencias, tarjetas). Cada jugador tiene un ID fijo, aunque cambie de dorsal.' },
-            { icon: 'fa-lock', title: '10. Tus datos', text: 'Todo se guarda en este dispositivo, sin enviarse a ningún servidor. Haz copias completas de vez en cuando (Inicio → Uso en el banquillo → Copia completa) y, si quieres, protege la app con un PIN.' },
-            { icon: 'fa-circle-question', title: '¡Listo!', text: 'Puedes repetir este recorrido cuando quieras desde Inicio → Uso en el banquillo → "Recorrido guiado". El botón "¿Cómo se usa?" tiene el manual completo.' }
+            { icon: 'fa-lock', title: '10. Tus datos', text: 'Todo se guarda en este dispositivo, sin enviarse a ningún servidor. Haz copias completas de vez en cuando (Inicio → Configuraciones y copias → Copia completa) y, si quieres, protege la app con un PIN.' },
+            { icon: 'fa-circle-question', title: '¡Listo!', text: 'Puedes repetir este recorrido cuando quieras desde Inicio → Configuraciones y copias → "Recorrido guiado". El botón "¿Cómo se usa?" tiene el manual completo.' }
         ];
         const BACKUP_KEY = 'statbench360_backups_v1';
 
@@ -548,7 +548,7 @@
                     injTimers: [],
                     formation: '4-4-2',
                     fieldPos: {},
-                    prefs: { wake: true, vibrate: true, autoDl: false, bgAudio: true }
+                    prefs: { wake: true, vibrate: true, bgAudio: true }
                 };
 
                 this.timerHandle = null;
@@ -1577,7 +1577,7 @@
             }
 
             setPref(key, value) {
-                if (!['wake', 'vibrate', 'autoDl', 'bgAudio'].includes(key)) return;
+                if (!['wake', 'vibrate', 'bgAudio'].includes(key)) return;
                 this.state.prefs[key] = value === true || value === 'true';
                 if (key === 'vibrate' && this.state.prefs.vibrate) this.vibrate(80);
                 this.saveToStorage();
@@ -1592,16 +1592,15 @@
                 const nBack = this.loadBackups().length;
                 return `
                     <div class="bg-slate-900 border border-lasalle-yellow/30 rounded-2xl p-4 space-y-3">
-                        <h2 class="text-xs font-black text-lasalle-yellow uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-mobile-screen"></i> Uso en el banquillo</h2>
+                        <h2 class="text-xs font-black text-lasalle-yellow uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-mobile-screen"></i> Configuraciones y copias</h2>
                         <div class="grid grid-cols-2 gap-2">
                             <div><label class="text-[11px] text-slate-300 font-bold">Pantalla encendida</label>${sel('wake', pr.wake)}</div>
                             <div><label class="text-[11px] text-slate-300 font-bold">Vibración</label>${sel('vibrate', pr.vibrate)}</div>
                             <div><label class="text-[11px] text-slate-300 font-bold">Sonido con pantalla apagada</label>${sel('bgAudio', pr.bgAudio)}</div>
-                            <div><label class="text-[11px] text-slate-300 font-bold">Copia al finalizar</label>${sel('autoDl', pr.autoDl)}</div>
                         </div>
                         <button onclick="app.testSound()" class="w-full bg-slate-800 text-lasalle-yellow font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-volume-high mr-1"></i> Probar sonido, alarma y voz</button>
                         <p class="text-[10px] text-slate-500">"Sonido con pantalla apagada" mantiene un audio silencioso durante el partido para que las alarmas suenen aunque el dispositivo se bloquee. En iPad/iPhone sube el volumen y quita el modo silencio.</p>
-                        <p class="text-[10px] text-slate-500">"Copia al finalizar" descarga un archivo de copia completa al terminar cada partido.</p>
+                        <p class="text-[10px] text-slate-500">La copia completa no se hace sola: pulsa "Copia completa" cuando quieras guardarla.</p>
                         <div class="grid grid-cols-2 gap-2 pt-1">
                             <button onclick="app.openPinModal()" class="bg-slate-800 text-lasalle-yellow font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-lock mr-1"></i> ${hasPin ? 'PIN activo · cambiar' : 'Poner PIN'}</button>
                             ${hasPin ? `<button onclick="app.lockNow()" class="bg-slate-800 text-lasalle-yellow font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-key mr-1"></i> Bloquear ahora</button>` : `<button onclick="app.exportFullBackup()" class="bg-slate-800 text-lasalle-yellow font-bold py-2 rounded-xl text-xs"><i class="fa-solid fa-download mr-1"></i> Copia completa</button>`}
@@ -1985,7 +1984,6 @@
                 fresh.forEach(x => { x.status = 'due'; });
                 this.vibrate([250, 120, 250, 120, 250]);
                 this.chime();
-                this.speak(`Recordatorio de cambio previsto. ${fresh[0].pairs.map(p => `Sale ${this.nameOnly(p.o)}. Entra ${this.nameOnly(p.i)}`).join('. ')}.`);
                 this._needRender = true;
             }
 
@@ -3125,7 +3123,7 @@
                     </button>
 
                     <button onclick="app.openToolsModal()" class="w-full bg-slate-900 hover:bg-slate-800 text-lasalle-yellow border border-lasalle-yellow/30 font-black p-3 rounded-2xl text-xs flex items-center justify-center gap-2 shadow">
-                        <i class="fa-solid fa-mobile-screen text-base"></i> Uso en el banquillo · PIN · Copias
+                        <i class="fa-solid fa-mobile-screen text-base"></i> Configuraciones y copias
                     </button>
 
                     <!-- DATOS DEL PARTIDO -->
@@ -3235,7 +3233,7 @@
                             <div class="space-y-1 max-h-40 overflow-y-auto">
                                 ${starters.map(p => `
                                     <div class="flex items-center justify-between bg-slate-950 px-2.5 py-1.5 rounded-xl text-xs">
-                                        <span class="font-bold text-lasalle-yellow w-9">#${esc(p.number)}${p.pending ? '<span class="text-amber-300" title="Falta completar dorsal o posición">⚠</span>' : ''}</span>
+                                        <span class="font-bold text-lasalle-yellow w-9">#${esc(p.number)}${this.isDupNumber(p) ? '<span class="text-rose-400 text-[9px] font-black ml-1" title="Dorsal repetido">REPETIDO</span>' : ''}${p.pending ? '<span class="text-amber-300" title="Falta completar dorsal o posición">⚠</span>' : ''}</span>
                                         <span class="flex-1 text-slate-200 truncate font-semibold">${esc(p.name)}</span>
                                         <div class="flex items-center gap-1.5">
                                             <button onclick="app.toggleCaptain('${p.id}')" class="px-2 py-0.5 rounded text-[10px] font-bold ${p.captain ? 'bg-lasalle-yellow text-lasalle-darkblue' : 'bg-slate-800 text-slate-400'}">${p.captain ? 'Capitán (C)' : 'Hacer (C)'}</button>
@@ -3252,7 +3250,7 @@
                             <div class="space-y-1 max-h-28 overflow-y-auto">
                                 ${subs.map(p => `
                                     <div class="flex items-center justify-between bg-slate-950 px-2.5 py-1.5 rounded-xl text-xs">
-                                        <span class="font-bold text-lasalle-yellow w-9">#${esc(p.number)}${p.pending ? '<span class="text-amber-300" title="Falta completar dorsal o posición">⚠</span>' : ''}</span>
+                                        <span class="font-bold text-lasalle-yellow w-9">#${esc(p.number)}${this.isDupNumber(p) ? '<span class="text-rose-400 text-[9px] font-black ml-1" title="Dorsal repetido">REPETIDO</span>' : ''}${p.pending ? '<span class="text-amber-300" title="Falta completar dorsal o posición">⚠</span>' : ''}</span>
                                         <span class="flex-1 text-slate-200 truncate font-semibold">${esc(p.name)}</span>
                                         <div class="flex gap-1">
                                             <button onclick="app.editPlayerModal('${p.id}')" class="px-1.5 py-0.5 bg-slate-800 text-lasalle-yellow rounded text-[10px]"><i class="fa-solid fa-pen"></i></button>
@@ -3765,15 +3763,15 @@
                         '<b>Registro rápido:</b> en Directo, pulsa <b>Gol nuestro</b>, <b>Gol rival</b> o <b>Tarjeta</b>. Se guarda con el minuto actual y aparece un aviso para <b>añadir asistencia / editar</b> o <b>Deshacer</b>.',
                         '<b>Toca a un jugador</b> (en Directo o en la Vista de campo) para abrir su menú: gol, amarilla, roja, cambiarlo o marcar que dio una asistencia. Tocar a un suplente lo mete en un cambio.',
                         '<b>Cronología:</b> cada suceso tiene un lápiz y una papelera. Puedes editar o borrar <b>cualquier</b> suceso (no solo el último) y el marcador, las ventanas y las estadísticas se recalculan solos. Los sucesos registrados con una versión antigua de la app no se pueden editar.',
-                        '<b>Planificar cambios:</b> en Directo, "+ Planificar" te deja anotar <b>uno o varios cambios futuros</b> (como un cambio normal, con "Añadir otro cambio"). Si pones un minuto, al llegar solo te lo <b>recuerda</b> (sonido, voz, vibración y aviso): <b>no se hace solo</b>. Pulsa <b>Hacer cambio</b> cuando quieras: se abre el cambio con los jugadores elegidos, lo puedes modificar y lo confirmas tú. También puedes editarlo o quitarlo.',
+                        '<b>Planificar cambios:</b> en Directo, "+ Planificar" te deja anotar <b>uno o varios cambios futuros</b> (como un cambio normal, con "Añadir otro cambio"). Si pones un minuto, al llegar solo te lo <b>recuerda</b> (sonido, vibración y aviso en pantalla): <b>no se hace solo</b>. Pulsa <b>Hacer cambio</b> cuando quieras: se abre el cambio con los jugadores elegidos, lo puedes modificar y lo confirmas tú. También puedes editarlo o quitarlo.',
                         '<b>Notas temporales:</b> el botón 📝 de Directo guarda notas rápidas solo para ti. <b>No salen en el acta, el PDF ni el histórico</b> y se borran al empezar otro partido.',
-                        '<b>Sonido en iPad/iPhone:</b> sube el volumen, quita el modo silencio y toca "Probar sonido, alarma y voz" en Inicio → Uso en el banquillo. Con "Sonido con pantalla apagada" activado las alarmas suenan aunque se bloquee la pantalla.',
-                        '<b>Pantalla encendida y vibración:</b> se activan en Inicio → botón "Uso en el banquillo". Con partido en juego el móvil no apagará la pantalla (si el navegador lo permite).',
+                        '<b>Sonido en iPad/iPhone:</b> sube el volumen, quita el modo silencio y toca "Probar sonido, alarma y voz" en Inicio → Configuraciones y copias. Con "Sonido con pantalla apagada" activado las alarmas suenan aunque se bloquee la pantalla.',
+                        '<b>Pantalla encendida y vibración:</b> se activan en Inicio → botón "Configuraciones y copias". Con partido en juego el móvil no apagará la pantalla (si el navegador lo permite).',
                         '<b>Vista de campo (opcional):</b> en Directo → "Vista de campo". Muestra tus titulares según la formación elegida. Activa "Mover jugadores" y arrástralos por el campo (también en el descanso); con el modo apagado, tocar a un jugador abre su menú. También puedes colocarlos antes del partido en Inicio → "Colocar jugadores en el campo". El que entra en un cambio ocupa el sitio del que sale.',
                         '<b>Temporada:</b> en Histórico → "Temporada" ves los acumulados por jugador (partidos, minutos, goles, asistencias, tarjetas), con filtro de competición y orden.',
                         '<b>ID de jugador y de equipo:</b> cada jugador tiene un ID permanente (no cambia con el dorsal ni al renombrarlo) y el equipo también. Los ID salen en la plantilla descargada, en los CSV y en las copias. Al importar una lista, si un nombre ya existe en tus registros la app te propone <b>mantener su ID</b>; si no lo aceptas, se crea uno nuevo.',
                         '<b>Inicio plegable:</b> cada tarjeta de Inicio (Datos del partido, Aviso por voz, Cargar plantilla, Alineación) se pliega y se despliega tocando su título. La app recuerda lo que dejaste abierto. "Plegar todo" y "Desplegar todo" están arriba.',
-                        '<b>Recorrido guiado:</b> Inicio → Uso en el banquillo → "Recorrido guiado de la app" lo repite cuando quieras. Se abre solo al entrar hasta que marques "No mostrar más".',
+                        '<b>Recorrido guiado:</b> Inicio → Configuraciones y copias → "Recorrido guiado de la app" lo repite cuando quieras. Se abre solo al entrar hasta que marques "No mostrar más".',
                         '<b>Borrar datos:</b> en Histórico puedes borrar todo el histórico, y en Temporada las estadísticas de todos los jugadores o de uno solo (papelera). Antes de borrar la app te pregunta si quieres descargar una copia de seguridad. <b>Dónde se guardan los datos:</b> en este navegador y dispositivo (pulsa "¿Dónde se guardan?"); las copias descargadas van a la carpeta de descargas.',
                         '<b>Compartir resumen:</b> en el Acta o en el detalle de un partido del histórico. Genera un <b>PDF visual de una página</b> (marcador, goles, tarjetas, cambios y tabla de jugadores) y lo envía por WhatsApp u otra app.',
                         '<b>Informe de temporada:</b> en Histórico → Temporada, "Informe de temporada en PDF": resultados, goleadores, asistentes, minutos y tabla de jugadores del equipo y la competición elegidos.',
@@ -3797,7 +3795,7 @@
                         '<b>Me equivoqué en un gol, cambio o tarjeta:</b> usa "Deshacer último" en la pestaña Directo o Cronología.',
                         '<b>Importé mal la plantilla:</b> en Gestión Ampliada puedes editar o borrar jugadores, o volver a importar.',
                         '<b>La pantalla sale sin diseño o falla el PDF sin conexión:</b> no se preparó el uso sin conexión. Ábrela con internet y sigue el apartado 7.',
-                        '<b>El dorsal ya existe:</b> cada jugador debe tener un dorsal distinto (0 a 99).'
+                        '<b>Dorsal repetido:</b> al configurar la plantilla puedes repetir dorsales (la app solo avisa y marca REPETIDO), pero no te dejará iniciar el partido hasta que los convocados tengan dorsales distintos. Con el partido en marcha no se pueden repetir.'
                     ]))
                 ].join('');
 
@@ -4825,9 +4823,25 @@
                 this.render();
             }
 
+            // Dorsales repetidos entre los jugadores convocados (titulares y banquillo)
+            dupNumbers() {
+                const map = new Map();
+                this.state.squad.filter(p => p.status !== 'unconvoked').forEach(p => map.set(p.number, (map.get(p.number) || []).concat([p])));
+                return new Map(Array.from(map).filter(([, l]) => l.length > 1));
+            }
+
+            isDupNumber(p) {
+                return this.state.match.status === 'setup' && p.status !== 'unconvoked' && this.dupNumbers().has(p.number);
+            }
+
             startMatch() {
                 if (!this.state.matchResetted) {
                     alert('Debes resetear los valores o iniciar un nuevo partido antes de continuar.');
+                    return;
+                }
+                const dups = this.dupNumbers();
+                if (dups.size > 0) {
+                    alert('No se puede iniciar el partido: hay dorsales repetidos entre los convocados.\n\n' + Array.from(dups).map(([n, l]) => `Dorsal ${n}: ${l.map(p => p.name).join(' y ')}`).join('\n') + '\n\nCorrígelos en la plantilla (lápiz de cada jugador).');
                     return;
                 }
 
@@ -5059,7 +5073,6 @@
                     this.stopTimers();
                     const saved = this.saveMatchToHistory(true);
                     this.autoBackup('fin de partido');
-                    if (this.state.prefs.autoDl) this.exportFullBackup(true);
                     this.switchTab('stats');
                     if (saved) this.showToast('Partido guardado en el histórico');
                 }, 'Finalizar');
@@ -5926,8 +5939,11 @@
                     return null;
                 }
                 if (this.state.squad.some(p => p.number === num && p.id !== ignoreId)) {
-                    alert(`El dorsal ${num} ya está asignado a otro jugador.`);
-                    return null;
+                    if (this.state.match.status !== 'setup') {
+                        alert(`El dorsal ${num} ya está asignado a otro jugador. No se puede repetir con el partido iniciado.`);
+                        return null;
+                    }
+                    this.showToast(`Aviso: el dorsal ${num} está repetido. Corrígelo antes de iniciar el partido.`);
                 }
                 return { name, num, pos };
             }
@@ -6110,7 +6126,7 @@
             }
         }
 
-        console.info('StatBench360 - versión generada: 2026-11-22 08:40 (Europe/Madrid)');
+        console.info('StatBench360 - versión generada: 2026-11-22 09:05 (Europe/Madrid)');
         const app = new FutStatApp();
         app.initOffline();
     </script>
